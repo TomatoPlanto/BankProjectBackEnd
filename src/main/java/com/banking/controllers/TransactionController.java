@@ -1,8 +1,7 @@
-package com.example.demo.controllers;
+package com.banking.controllers;
 
-import com.example.demo.models.TransactionModel;
-import com.example.demo.services.TransactionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.banking.models.TransactionModel;
+import com.banking.services.TransactionService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

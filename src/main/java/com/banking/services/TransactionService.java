@@ -1,6 +1,6 @@
-package com.example.demo.services;
+package com.banking.services;
 
-import com.example.demo.models.TransactionModel;
+import com.banking.models.TransactionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 

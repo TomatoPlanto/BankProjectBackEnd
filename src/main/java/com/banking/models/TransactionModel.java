@@ -1,4 +1,4 @@
-package com.example.demo.models;
+package com.banking.models;
 
 public class TransactionModel {
     private String fromAccount;
