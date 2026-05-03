@@ -1,11 +1,10 @@
 package com.banking.controllers;
 
+import com.banking.models.dto.request.UpdateBalanceRequestDTO;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.banking.models.dto.request.LoginRequestDTO;
+import com.banking.models.dto.request.AtmLoginRequestDTO;
 import com.banking.models.dto.response.LoginResponseDTO;
 import com.banking.services.Interface.IAtmService;
 
@@ -23,8 +22,14 @@ public class AtmController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> atmLogin(@Valid @RequestBody LoginRequestDTO request) {
+    public ResponseEntity<LoginResponseDTO> atmLogin(@Valid @RequestBody AtmLoginRequestDTO request) {
         LoginResponseDTO response = atmService.atmLogin(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/updateBalance")
+    public ResponseEntity<LoginResponseDTO> updateBalance(@Valid @RequestBody UpdateBalanceRequestDTO request) { // need to fix the @ on this one
+        LoginResponseDTO response = atmService.updateBalance(request);
         return ResponseEntity.ok(response);
     }
 }

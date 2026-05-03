@@ -1,9 +1,12 @@
 package com.banking.services.Interface;
 
 import com.banking.models.dto.request.AtmLoginRequestDTO;
+import com.banking.models.dto.request.UpdateBalanceRequestDTO;
 import com.banking.models.dto.response.LoginResponseDTO;
 
 public interface IAtmService {
 
-    public LoginResponseDTO atmLogin(AtmLoginRequestDTO request);
+    LoginResponseDTO atmLogin(AtmLoginRequestDTO request);
+
+    LoginResponseDTO updateBalance(UpdateBalanceRequestDTO request);
 }

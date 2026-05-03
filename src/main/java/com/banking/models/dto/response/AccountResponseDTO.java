@@ -23,4 +23,5 @@ public class AccountResponseDTO {
     private BigDecimal transferLimit;
     private BigDecimal absoluteMinimum;
     private AccountStatus status;
+    private int pin;
 }
