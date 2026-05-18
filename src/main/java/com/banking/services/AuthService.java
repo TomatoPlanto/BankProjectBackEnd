@@ -49,6 +49,7 @@ public class AuthService {
         return LoginResponseDTO.builder()
                 .token(token)
                 .role(role)
+                .email(request.getEmail())
                 .build();
     }
 }

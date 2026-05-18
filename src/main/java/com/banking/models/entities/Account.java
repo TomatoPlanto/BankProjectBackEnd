@@ -5,7 +5,6 @@ import com.banking.models.enums.AccountType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -51,6 +50,9 @@ public class Account {
     @Column(nullable = false)
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
+
+    @Column(name = "pin", nullable = false)
+    private int pin;
 
 
 

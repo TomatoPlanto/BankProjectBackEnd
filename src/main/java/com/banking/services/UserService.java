@@ -1,4 +1,6 @@
 package com.banking.services;
+import com.banking.models.entities.Account;
+import com.banking.models.enums.AccountType;
 import com.banking.services.Interface.IUserService;
 import com.banking.exceptions.DuplicateBsnException;
 import com.banking.exceptions.DuplicateEmailException;
@@ -11,7 +13,11 @@ import com.banking.models.enums.UserStatus;
 import com.banking.repositories.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.banking.models.entities.Account;
+import com.banking.models.enums.AccountType;
+import com.banking.repositories.AccountRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,10 +27,17 @@ public class UserService implements IUserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AccountRepository accountRepository;
+    private final AccountService accountService;
 
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,
+                       BCryptPasswordEncoder passwordEncoder,
+                       AccountRepository accountRepository,
+                       AccountService accountService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.accountRepository = accountRepository;
+        this.accountService = accountService;
     }
 
     @Override
@@ -73,6 +86,29 @@ public class UserService implements IUserService {
 
         user.setStatus(UserStatus.ACTIVE);
         User savedUser = userRepository.save(user);
+
+        // Auto-create CHECKING account
+        Account checkingAccount = Account.builder()
+                .user(savedUser)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.CHECKING)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .build();
+        accountRepository.save(checkingAccount);
+
+        // Auto-create SAVINGS account
+        Account savingsAccount = Account.builder()
+                .user(savedUser)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.SAVINGS)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .build();
+        accountRepository.save(savingsAccount);
+
         return UserMapper.toDTO(savedUser);
     }
 

@@ -1,5 +1,6 @@
 package com.banking.services;
 
+import com.banking.exceptions.AccountNotFoundException;
 import com.banking.exceptions.UserNotFoundException;
 import com.banking.mappers.AccountMapper;
 import com.banking.models.dto.request.CreateAccountRequestDTO;
@@ -49,7 +50,7 @@ public class AccountService implements IAccountService {
     @Override
     public AccountResponseDTO getAccountById(UUID accountId) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
         return AccountMapper.toDTO(account);
     }
 
@@ -72,7 +73,7 @@ public class AccountService implements IAccountService {
     @Override
     public AccountResponseDTO updateLimits(UUID accountId, UpdateAccountLimitsRequestDTO request) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
 
         account.setDailyLimit(request.getDailyLimit());
         account.setTransferLimit(request.getTransferLimit());
@@ -85,14 +86,14 @@ public class AccountService implements IAccountService {
     @Override
     public AccountResponseDTO closeAccount(UUID accountId) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
 
         account.setStatus(AccountStatus.CLOSED);
         Account saved = accountRepository.save(account);
         return AccountMapper.toDTO(saved);
     }
 
-    private String generateIban() {
+    public String generateIban() {
         String bankCode = "INHO";
         String accountNumber = String.format("%010d",
                 (long) (Math.random() * 9_000_000_000L) + 1_000_000_000L);
@@ -101,7 +102,7 @@ public class AccountService implements IAccountService {
         return "NL" + String.format("%02d", checkDigits) + bankCode + "0" + accountNumber;
     }
 
-    private int calculateCheckDigits(String rawIban) {
+    public int calculateCheckDigits(String rawIban) {
         String rearranged = rawIban.substring(4) + rawIban.substring(0, 4);
         StringBuilder numericIban = new StringBuilder();
         for (char c : rearranged.toCharArray()) {
