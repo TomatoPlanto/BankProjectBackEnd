@@ -1,4 +1,5 @@
 package com.banking.services;
+import com.banking.domain.policy.users.RegisterPolicy;
 import com.banking.models.entities.Account;
 import com.banking.models.enums.AccountType;
 import com.banking.services.Interface.IUserService;
@@ -29,25 +30,23 @@ public class UserService implements IUserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final AccountRepository accountRepository;
     private final AccountService accountService;
+    private final RegisterPolicy registerPolicy;
 
     public UserService(UserRepository userRepository,
                        BCryptPasswordEncoder passwordEncoder,
                        AccountRepository accountRepository,
-                       AccountService accountService) {
+                       AccountService accountService,
+                       RegisterPolicy registerPolicy) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.accountRepository = accountRepository;
         this.accountService = accountService;
+        this.registerPolicy = registerPolicy;
     }
 
     @Override
     public UserResponseDTO register(RegisterRequestDTO request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEmailException("Email already in use");
-        }
-        if (userRepository.existsByBsn(request.getBsn())) {
-            throw new DuplicateBsnException("BSN already registered");
-        }
+        registerPolicy.enforceRegisterPolicy(request);
 
         User user = UserMapper.toEntity(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
