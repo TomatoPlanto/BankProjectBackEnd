@@ -1,7 +1,9 @@
 package com.banking.controllers;
 
+import com.banking.models.dto.request.DepositToAccountRequestDTO;
 import com.banking.models.dto.request.RegisterRequestDTO;
 import com.banking.models.dto.request.TransferBetweenAccountsRequestDTO;
+import com.banking.models.dto.request.WithdrawFromAccountRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.services.Interface.ITransactionService;
@@ -36,8 +38,20 @@ public class TransactionController {
     }
 
     @GetMapping("/account/{accountId}")
-    public ResponseEntity<List<AccountResponseDTO>> getAllAccountTransaction(@PathVariable UUID accountId) {
+    public ResponseEntity<List<TransactionResponseDTO>> getAllAccountTransaction(@PathVariable UUID accountId) {
         List<TransactionResponseDTO> response = transactionService.getAllAccountTransactions(accountId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<TransactionResponseDTO> withdrawFromAccount(@Valid @RequestBody WithdrawFromAccountRequestDTO request) {
+        TransactionResponseDTO response = transactionService.withdrawFromAccount(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/deposit")
+    public ResponseEntity<TransactionResponseDTO> depositToAccount(@Valid @RequestBody DepositToAccountRequestDTO request) {
+        TransactionResponseDTO response = transactionService.depositToAccount(request);
         return ResponseEntity.ok(response);
     }
 }

@@ -83,4 +83,11 @@ public class GlobalExceptionHandler {
         error.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
+
+    @ExceptionHandler(TransactionNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleTransactionNotFound(TransactionNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
 }
