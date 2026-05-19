@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @SecurityRequirement(name = "bearerAuth")
@@ -31,6 +32,12 @@ public class TransactionController {
     @PostMapping("/transfer")
     public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferBetweenAccountsRequestDTO request) {
         TransactionResponseDTO response = transactionService.transferBetweenAccounts(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/account/{accountId}")
+    public ResponseEntity<List<AccountResponseDTO>> getAllAccountTransaction(@PathVariable UUID accountId) {
+        List<TransactionResponseDTO> response = transactionService.getAllAccountTransactions(accountId);
         return ResponseEntity.ok(response);
     }
 }

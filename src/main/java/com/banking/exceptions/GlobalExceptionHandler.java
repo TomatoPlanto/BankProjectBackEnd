@@ -55,4 +55,32 @@ public class GlobalExceptionHandler {
         error.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
+
+    @ExceptionHandler(AccountNotActiveException.class)
+    public ResponseEntity<Map<String, String>> handleAccountNotActive(AccountNotActiveException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(NotEnoughFundsException.class)
+    public ResponseEntity<Map<String, String>> handleNotEnoughFunds(NotEnoughFundsException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(TransactionFromSavingAccountException.class)
+    public ResponseEntity<Map<String, String>> handleTransactionFromSavingAccount(TransactionFromSavingAccountException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(TransferAmountExceedLimitException.class)
+    public ResponseEntity<Map<String, String>> handleTransferAmountExceedLimit(TransferAmountExceedLimitException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 }
