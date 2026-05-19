@@ -35,6 +35,10 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
     @Query("UPDATE Account ac SET ac.balance = ?2 WHERE ac.accountId = ?1")
     int setAccountBalance(UUID accountId, BigDecimal newBalance);
 
+    @Modifying
+    @Query("UPDATE Account ac SET ac.todayChange = ?2 WHERE ac.accountId = ?1")
+    int setTodayChange(UUID accountId, BigDecimal newChange);
+
     @Query("SELECT a FROM Account a WHERE a.user.userId = :userId AND a.status = :status")
     List<Account> findActiveAccountsByUser(
             @Param("userId") UUID userId,

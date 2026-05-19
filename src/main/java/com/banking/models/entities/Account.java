@@ -39,6 +39,9 @@ public class Account {
     @Column(name = "daily_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal dailyLimit;
 
+    @Column(name = "today_change", nullable = false, precision = 19, scale = 4)
+    private BigDecimal todayChange = BigDecimal.ZERO;
+
     @Column(name = "transfer_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal transferLimit;
 
