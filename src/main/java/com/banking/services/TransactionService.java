@@ -1,11 +1,12 @@
 package com.banking.services;
 
 import com.banking.exceptions.*;
-import com.banking.mappers.AccountMapper;
 import com.banking.mappers.TransactionMapper;
 import com.banking.models.dto.request.DepositToAccountRequestDTO;
+import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferBetweenAccountsRequestDTO;
 import com.banking.models.dto.request.WithdrawFromAccountRequestDTO;
+import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.Transaction;
@@ -14,9 +15,9 @@ import com.banking.models.enums.AccountType;
 import com.banking.models.enums.TransactionType;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
-import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.ITransactionService;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -119,14 +120,24 @@ public class TransactionService implements ITransactionService {
     }
 
     @Override
-    public List<TransactionResponseDTO> getAllAccountTransactions(UUID accountId){
-        var account = accountRepository.findByAccountId(accountId);
+    public List<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
+        var account = accountRepository.findByAccountId(request.getAccountId());
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
 
-        return transactionRepository.findAllAccountTransactions(accountId)
+        return transactionRepository.findAccountTransactions(request.getAccountId(), PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage()))
                 .stream()
                 .map(TransactionMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public CountResponseDTO getAccountTransactionsCount(UUID accountId){
+        int count = transactionRepository.countAllAccountTransactions(accountId);
+
+        CountResponseDTO res = new CountResponseDTO();
+        res.setCount(count);
+
+        return res;
     }
 
     @Override

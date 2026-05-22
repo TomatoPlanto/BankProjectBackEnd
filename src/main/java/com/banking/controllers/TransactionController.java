@@ -1,10 +1,10 @@
 package com.banking.controllers;
 
 import com.banking.models.dto.request.DepositToAccountRequestDTO;
-import com.banking.models.dto.request.RegisterRequestDTO;
+import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferBetweenAccountsRequestDTO;
 import com.banking.models.dto.request.WithdrawFromAccountRequestDTO;
-import com.banking.models.dto.response.AccountResponseDTO;
+import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.services.Interface.ITransactionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -37,10 +37,16 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/account/{accountId}")
-    public ResponseEntity<List<TransactionResponseDTO>> getAllAccountTransaction(@PathVariable UUID accountId) {
-        List<TransactionResponseDTO> response = transactionService.getAllAccountTransactions(accountId);
+    @GetMapping("/account")
+    public ResponseEntity<List<TransactionResponseDTO>> getAllAccountTransaction(@Valid @RequestBody GetAccountTransactionsRequestDTO request) {
+        List<TransactionResponseDTO> response = transactionService.getAccountTransactions(request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/account/count/{accountId}")
+    public CountResponseDTO getAllAccountTransaction(@PathVariable UUID accountId) {
+        CountResponseDTO response = transactionService.getAccountTransactionsCount(accountId);
+        return ResponseEntity.ok(response).getBody();
     }
 
     @PostMapping("/withdraw")
