@@ -99,7 +99,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description(request.getDescription())
-                .type(TransactionType.CUSOMER_TRANSFER)
+                .type(TransactionType.CUSTOMER_TRANSFER)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -178,7 +178,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(null)
                 .amount(request.getWithdrawAmount())
                 .description("Withdrawal")
-                .type(TransactionType.CUSOMER_TRANSFER)
+                .type(TransactionType.CUSTOMER_TRANSFER)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -227,7 +227,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getDepositAmount())
                 .description("Deposit")
-                .type(TransactionType.CUSOMER_TRANSFER)
+                .type(TransactionType.CUSTOMER_TRANSFER)
                 .createdAt(LocalDateTime.now())
                 .build();
 

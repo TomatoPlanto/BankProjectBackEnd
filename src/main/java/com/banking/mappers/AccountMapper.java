@@ -5,6 +5,8 @@ import com.banking.models.entities.Account;
 
 public class AccountMapper {
 
+    private AccountMapper() {}
+
     public static AccountResponseDTO toDTO(Account account) {
         return AccountResponseDTO.builder()
                 .accountId(account.getAccountId())

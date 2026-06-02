@@ -1,13 +1,19 @@
 package com.banking.controllers;
-import com.banking.services.Interface.IUserService;
+
 import com.banking.models.dto.request.RegisterRequestDTO;
 import com.banking.models.dto.response.UserResponseDTO;
 import com.banking.models.enums.UserStatus;
+import com.banking.services.Interface.IUserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -22,39 +28,60 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Public — no token needed
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
-        UserResponseDTO response = userService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @Operation(summary = "Register as a new customer")
+    public ResponseEntity<UserResponseDTO> register(
+            @Valid @RequestBody RegisterRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(userService.register(request));
+    }
+
+    /*
+     * Customer calls this to get their own profile.
+     * Avoids hitting GET /api/users which is employee-only.
+     */
+    @GetMapping("/me")
+    @Operation(summary = "Get own profile from JWT")
+    public ResponseEntity<UserResponseDTO> getMe(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                userService.getUserByEmail(userDetails.getUsername()));
     }
 
     @GetMapping("/{userId}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Get any user by ID — employee only")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable UUID userId) {
-        UserResponseDTO response = userService.getUserById(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "List all users — employee only")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-        List<UserResponseDTO> response = userService.getAllUsers();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<UserResponseDTO>> getUsersByStatus(@PathVariable UserStatus status) {
-        List<UserResponseDTO> response = userService.getUsersByStatus(status);
-        return ResponseEntity.ok(response);
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Filter users by status — employee only")
+    public ResponseEntity<List<UserResponseDTO>> getUsersByStatus(
+            @PathVariable UserStatus status) {
+        return ResponseEntity.ok(userService.getUsersByStatus(status));
     }
 
     @PutMapping("/{userId}/approve")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Approve pending customer, auto-creates checking + savings")
     public ResponseEntity<UserResponseDTO> approveUser(@PathVariable UUID userId) {
-        UserResponseDTO response = userService.approveUser(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.approveUser(userId));
     }
 
     @PutMapping("/{userId}/close")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Close a customer account")
     public ResponseEntity<UserResponseDTO> closeUser(@PathVariable UUID userId) {
-        UserResponseDTO response = userService.closeUser(userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userService.closeUser(userId));
     }
 }

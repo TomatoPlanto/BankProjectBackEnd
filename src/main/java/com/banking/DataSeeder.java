@@ -39,186 +39,145 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        seedEmployee();
+        Account johnChecking = seedJohn();
+        Account janeChecking = seedJane();
+        seedTransactions(johnChecking, janeChecking);
+        seedPendingUser();
+    }
 
-        if (!userRepository.existsByEmail("employee@bank.com")) {
-            User employee = User.builder()
-                    .email("employee@bank.com")
-                    .passwordHash(passwordEncoder.encode("employee123"))
-                    .firstName("Bank")
-                    .lastName("Employee")
-                    .bsn("111111111")
-                    .phoneNumber("0611111111")
-                    .role(UserRole.EMPLOYEE)
-                    .status(UserStatus.ACTIVE)
-                    .build();
-            userRepository.save(employee);
-        }
+    private void seedEmployee() {
+        if (userRepository.existsByEmail("employee@bank.com")) return;
+        userRepository.save(User.builder()
+                .email("employee@bank.com")
+                .passwordHash(passwordEncoder.encode("employee123"))
+                .firstName("Bank")
+                .lastName("Employee")
+                .bsn("111111111")
+                .phoneNumber("0611111111")
+                .role(UserRole.EMPLOYEE)
+                .status(UserStatus.ACTIVE)
+                .build());
+    }
 
-        if (!userRepository.existsByEmail("john@email.com")) {
-            User customer = User.builder()
-                    .email("john@email.com")
-                    .passwordHash(passwordEncoder.encode("secret123"))
-                    .firstName("John")
-                    .lastName("Doe")
-                    .bsn("123456789")
-                    .phoneNumber("0612345678")
-                    .role(UserRole.CUSTOMER)
-                    .status(UserStatus.ACTIVE)
-                    .build();
-            User savedCustomer = userRepository.save(customer);
+    private Account seedJohn() {
+        if (userRepository.existsByEmail("john@email.com")) return null;
 
-            Account johnCheckAccount = Account.builder()
-                    .user(savedCustomer)
-                    .iban(accountService.generateIban())
-                    .accountType(AccountType.CHECKING)
-                    .dailyLimit(new BigDecimal("1000.00"))
-                    .todayChange(BigDecimal.ZERO)
-                    .transferLimit(new BigDecimal("500.00"))
-                    .absoluteMinimum(BigDecimal.ZERO)
-                    .balance(new BigDecimal("2500.00"))
-                    .status(AccountStatus.ACTIVE)
-                    .build();
+        User john = userRepository.save(User.builder()
+                .email("john@email.com")
+                .passwordHash(passwordEncoder.encode("secret123"))
+                .firstName("John")
+                .lastName("Doe")
+                .bsn("123456789")
+                .phoneNumber("0612345678")
+                .role(UserRole.CUSTOMER)
+                .status(UserStatus.ACTIVE)
+                .build());
 
-            Account johnSaveAccount = Account.builder()
-                    .user(savedCustomer)
-                    .iban(accountService.generateIban())
-                    .accountType(AccountType.SAVINGS)
-                    .dailyLimit(new BigDecimal("1000.00"))
-                    .todayChange(BigDecimal.ZERO)
-                    .transferLimit(new BigDecimal("500.00"))
-                    .absoluteMinimum(BigDecimal.ZERO)
-                    .balance(new BigDecimal("5000.00"))
-                    .status(AccountStatus.ACTIVE)
-                    .build();
+        Account checking = accountRepository.save(Account.builder()
+                .user(john)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.CHECKING)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .balance(new BigDecimal("2500.00"))
+                .status(AccountStatus.ACTIVE)
+                .pin(1234)
+                .build());
 
-            accountRepository.save(johnSaveAccount);
-            accountRepository.save(johnCheckAccount);
+        accountRepository.save(Account.builder()
+                .user(john)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.SAVINGS)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .balance(new BigDecimal("5000.00"))
+                .status(AccountStatus.ACTIVE)
+                .pin(1234)
+                .build());
 
-            transactionRepository.save(Transaction.builder()
-                    .fromAccount(johnCheckAccount)
-                    .toAccount(johnSaveAccount)
-                    .amount(new BigDecimal("300.13"))
-                    .description("Transfer to savings account")
-                    .type(TransactionType.CUSOMER_TRANSFER)
-                    .createdAt(LocalDateTime.now())
-                    .build());
+        return checking;
+    }
 
-            transactionRepository.save(Transaction.builder()
-                    .fromAccount(johnSaveAccount)
-                    .toAccount(johnCheckAccount)
-                    .amount(new BigDecimal("299.99"))
-                    .description("Transfer from savings account")
-                    .type(TransactionType.CUSOMER_TRANSFER)
-                    .createdAt(LocalDateTime.now())
-                    .build());
+    private Account seedJane() {
+        if (userRepository.existsByEmail("jane@email.com")) return null;
 
-            transactionRepository.save(Transaction.builder()
-                    .fromAccount(johnCheckAccount)
-                    .toAccount(johnSaveAccount)
-                    .amount(new BigDecimal("413.55"))
-                    .description("Transfer to savings account")
-                    .type(TransactionType.CUSOMER_TRANSFER)
-                    .createdAt(LocalDateTime.now())
-                    .build());
+        User jane = userRepository.save(User.builder()
+                .email("jane@email.com")
+                .passwordHash(passwordEncoder.encode("secret123"))
+                .firstName("Jane")
+                .lastName("Smith")
+                .bsn("987654321")
+                .phoneNumber("0687654321")
+                .role(UserRole.CUSTOMER)
+                .status(UserStatus.ACTIVE)
+                .build());
 
-            if (!userRepository.existsByEmail("jane@email.com")) {
-                User customer2 = User.builder()
-                        .email("jane@email.com")
-                        .passwordHash(passwordEncoder.encode("secret123"))
-                        .firstName("Jane")
-                        .lastName("Smith")
-                        .bsn("987654321")
-                        .phoneNumber("0687654321")
-                        .role(UserRole.CUSTOMER)
-                        .status(UserStatus.ACTIVE)
-                        .build();
-                User savedCustomer2 = userRepository.save(customer2);
+        Account checking = accountRepository.save(Account.builder()
+                .user(jane)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.CHECKING)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .balance(new BigDecimal("1500.00"))
+                .status(AccountStatus.ACTIVE)
+                .pin(5678)
+                .build());
 
-                accountRepository.save(Account.builder()
-                        .user(savedCustomer2)
-                        .iban(accountService.generateIban())
-                        .accountType(AccountType.SAVINGS)
-                        .dailyLimit(new BigDecimal("1000.00"))
-                        .todayChange(BigDecimal.ZERO)
-                        .transferLimit(new BigDecimal("500.00"))
-                        .absoluteMinimum(BigDecimal.ZERO)
-                        .balance(new BigDecimal("3000.00"))
-                        .status(AccountStatus.ACTIVE)
-                        .build());
+        accountRepository.save(Account.builder()
+                .user(jane)
+                .iban(accountService.generateIban())
+                .accountType(AccountType.SAVINGS)
+                .dailyLimit(new BigDecimal("1000.00"))
+                .transferLimit(new BigDecimal("500.00"))
+                .absoluteMinimum(BigDecimal.ZERO)
+                .balance(new BigDecimal("3000.00"))
+                .status(AccountStatus.ACTIVE)
+                .pin(5678)
+                .build());
 
-                Account janeCheckAccount = Account.builder()
-                        .user(savedCustomer2)
-                        .iban(accountService.generateIban())
-                        .accountType(AccountType.CHECKING)
-                        .dailyLimit(new BigDecimal("1000.00"))
-                        .todayChange(BigDecimal.ZERO)
-                        .transferLimit(new BigDecimal("500.00"))
-                        .absoluteMinimum(BigDecimal.ZERO)
-                        .balance(new BigDecimal("1500.00"))
-                        .status(AccountStatus.ACTIVE)
-                        .build();
+        return checking;
+    }
 
-                accountRepository.save(janeCheckAccount);
+    /*
+     * Seed realistic history so the transaction page has data on first run.
+     * null fromAccount = deposit, null toAccount = withdrawal.
+     */
+    private void seedTransactions(Account johnChecking, Account janeChecking) {
+        if (johnChecking == null || janeChecking == null) return;
 
-                transactionRepository.save(Transaction.builder()
-                        .fromAccount(johnCheckAccount)
-                        .toAccount(janeCheckAccount)
-                        .amount(new BigDecimal("350.00"))
-                        .description("Transfer to jane checking account")
-                        .type(TransactionType.CUSOMER_TRANSFER)
-                        .createdAt(LocalDateTime.now())
-                        .build());
+        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane"));
+        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John"));
+        transactionRepository.save(txn(johnChecking, janeChecking, "134.55", "Transfer to Jane"));
+        transactionRepository.save(txn(null,         janeChecking, "134.55", "ATM deposit"));
+        transactionRepository.save(txn(janeChecking, null,         "134.55", "ATM withdrawal"));
+    }
 
-                transactionRepository.save(Transaction.builder()
-                        .fromAccount(janeCheckAccount)
-                        .toAccount(johnCheckAccount)
-                        .amount(new BigDecimal("396.99"))
-                        .description("Transfer to john checking account")
-                        .type(TransactionType.CUSOMER_TRANSFER)
-                        .createdAt(LocalDateTime.now())
-                        .build());
+    private Transaction txn(Account from, Account to, String amount, String desc) {
+        return Transaction.builder()
+                .fromAccount(from)
+                .toAccount(to)
+                .amount(new BigDecimal(amount))
+                .description(desc)
+                .type(TransactionType.CUSTOMER_TRANSFER)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
 
-                transactionRepository.save(Transaction.builder()
-                        .fromAccount(johnCheckAccount)
-                        .toAccount(janeCheckAccount)
-                        .amount(new BigDecimal("134.55"))
-                        .description("Transfer to jane checking account")
-                        .type(TransactionType.CUSOMER_TRANSFER)
-                        .createdAt(LocalDateTime.now())
-                        .build());
-
-                transactionRepository.save(Transaction.builder()
-                        .fromAccount(null)
-                        .toAccount(janeCheckAccount)
-                        .amount(new BigDecimal("134.55"))
-                        .description("Deposit to jane checking account")
-                        .type(TransactionType.CUSOMER_TRANSFER)
-                        .createdAt(LocalDateTime.now())
-                        .build());
-
-                transactionRepository.save(Transaction.builder()
-                        .fromAccount(janeCheckAccount)
-                        .toAccount(null)
-                        .amount(new BigDecimal("134.55"))
-                        .description("Withdrawal from jane checking account")
-                        .type(TransactionType.CUSOMER_TRANSFER)
-                        .createdAt(LocalDateTime.now())
-                        .build());
-            }
-        }
-
-        if (!userRepository.existsByEmail("pending@email.com")) {
-            User pending = User.builder()
-                    .email("pending@email.com")
-                    .passwordHash(passwordEncoder.encode("secret123"))
-                    .firstName("Pending")
-                    .lastName("User")
-                    .bsn("555555555")
-                    .phoneNumber("0655555555")
-                    .role(UserRole.CUSTOMER)
-                    .status(UserStatus.PENDING)
-                    .build();
-            userRepository.save(pending);
-        }
+    private void seedPendingUser() {
+        if (userRepository.existsByEmail("pending@email.com")) return;
+        userRepository.save(User.builder()
+                .email("pending@email.com")
+                .passwordHash(passwordEncoder.encode("secret123"))
+                .firstName("Pending")
+                .lastName("User")
+                .bsn("555555555")
+                .phoneNumber("0655555555")
+                .role(UserRole.CUSTOMER)
+                .status(UserStatus.PENDING)
+                .build());
     }
 }
