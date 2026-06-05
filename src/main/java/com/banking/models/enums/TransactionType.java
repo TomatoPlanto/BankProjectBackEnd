@@ -1,6 +1,6 @@
 package com.banking.models.enums;
 
 public enum TransactionType {
-    CUSOMER_TRANSFER,
+    CUSTOMER_TRANSFER,
     EMPLOYEE_TRANSFER
 }

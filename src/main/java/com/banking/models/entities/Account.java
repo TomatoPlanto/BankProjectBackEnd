@@ -39,12 +39,21 @@ public class Account {
     @Column(name = "daily_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal dailyLimit;
 
+    /*
+     * Resets to 0 each day. Every debit adds to this.
+     * Used to enforce dailyLimit — scheduled job handles the reset.
+     */
     @Column(name = "today_change", nullable = false, precision = 19, scale = 4)
+    @Builder.Default
     private BigDecimal todayChange = BigDecimal.ZERO;
 
     @Column(name = "transfer_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal transferLimit;
 
+    /*
+     * Floor — balance can never drop below this.
+     * Checked before every debit in TransactionService.
+     */
     @Column(name = "absolute_minimum", nullable = false, precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal absoluteMinimum = BigDecimal.ZERO;
@@ -54,19 +63,13 @@ public class Account {
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
 
+    /*
+     * ATM PIN — never exposed in AccountResponseDTO.
+     * 0 = unset sentinel. ATM won't accept it (valid range 1000-9999).
+     */
     @Column(name = "pin", nullable = false)
-    private int pin;
-
-
-
-//   @OneToMany(mappedBy = "fromAccount", fetch = FetchType.LAZY)
-//    private List<Transaction> outgoingTransactions;
-//
-//    @OneToMany(mappedBy = "toAccount", fetch = FetchType.LAZY)
-//    private List<Transaction> incomingTransactions;
-//
-//    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-//    private List<AtmInteraction> atmInteractions;
+    @Builder.Default
+    private int pin = 0;
 
     public boolean canDebit(BigDecimal amount) {
         return balance.subtract(amount).compareTo(absoluteMinimum) >= 0;
