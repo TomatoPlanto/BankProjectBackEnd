@@ -1,9 +1,7 @@
 package com.banking.controllers;
 
-import com.banking.models.dto.request.DepositToAccountRequestDTO;
 import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
-import com.banking.models.dto.request.TransferBetweenAccountsRequestDTO;
-import com.banking.models.dto.request.WithdrawFromAccountRequestDTO;
+import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.services.Interface.ITransactionService;
@@ -31,9 +29,9 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/transfer")
-    public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferBetweenAccountsRequestDTO request) {
-        TransactionResponseDTO response = transactionService.transferBetweenAccounts(request);
+    @PostMapping()
+    public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferRequestDTO request) {
+        TransactionResponseDTO response = transactionService.transfer(request);
         return ResponseEntity.ok(response);
     }
 
@@ -47,17 +45,5 @@ public class TransactionController {
     public CountResponseDTO getAllAccountTransaction(@PathVariable UUID accountId) {
         CountResponseDTO response = transactionService.getAccountTransactionsCount(accountId);
         return ResponseEntity.ok(response).getBody();
-    }
-
-    @PostMapping("/withdraw")
-    public ResponseEntity<TransactionResponseDTO> withdrawFromAccount(@Valid @RequestBody WithdrawFromAccountRequestDTO request) {
-        TransactionResponseDTO response = transactionService.withdrawFromAccount(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/deposit")
-    public ResponseEntity<TransactionResponseDTO> depositToAccount(@Valid @RequestBody DepositToAccountRequestDTO request) {
-        TransactionResponseDTO response = transactionService.depositToAccount(request);
-        return ResponseEntity.ok(response);
     }
 }

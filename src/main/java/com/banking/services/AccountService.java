@@ -40,7 +40,6 @@ public class AccountService implements IAccountService {
                 .iban(generateIban())
                 .accountType(request.getAccountType())
                 .dailyLimit(request.getDailyLimit())
-                .todayChange(BigDecimal.ZERO)
                 .transferLimit(request.getTransferLimit())
                 .absoluteMinimum(request.getAbsoluteMinimum())
                 .balance(BigDecimal.ZERO)

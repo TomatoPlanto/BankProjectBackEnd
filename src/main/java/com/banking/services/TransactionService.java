@@ -2,22 +2,26 @@ package com.banking.services;
 
 import com.banking.exceptions.*;
 import com.banking.mappers.TransactionMapper;
-import com.banking.models.dto.request.DepositToAccountRequestDTO;
 import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
-import com.banking.models.dto.request.TransferBetweenAccountsRequestDTO;
-import com.banking.models.dto.request.WithdrawFromAccountRequestDTO;
+import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.Transaction;
+import com.banking.models.entities.User;
 import com.banking.models.enums.AccountStatus;
 import com.banking.models.enums.AccountType;
 import com.banking.models.enums.TransactionType;
+import com.banking.models.enums.UserRole;
+import com.banking.policy.TransactionPolicy;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
+import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.ITransactionService;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,10 +33,15 @@ import java.util.stream.Collectors;
 public class TransactionService implements ITransactionService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
+    private final TransactionPolicy transactionPolicy;
 
-    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, TransactionPolicy transactionPolicy) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
+
+        this.transactionPolicy = transactionPolicy;
     }
 
     @Override
@@ -45,53 +54,49 @@ public class TransactionService implements ITransactionService {
 
     @Override
     @Transactional
-    public TransactionResponseDTO transferBetweenAccounts(TransferBetweenAccountsRequestDTO request){
-        // Get from account
-        var fromAccountWrap = accountRepository.findByAccountId(request.getFromAccountId());
-        if(fromAccountWrap.isEmpty()) throw new AccountNotFoundException("From account not found");
-        Account fromAccount = fromAccountWrap.get();
+    public TransactionResponseDTO transfer(TransferRequestDTO request){
+        Account from = getAccountForTransaction(request.getFromAccountId(), "Failed to get sender's account");
+        Account to = getAccountForTransaction(request.getToAccountId(), "Failed to get receiver's account");
 
-        // Get to account
-        var toAccountWrap = accountRepository.findByAccountId(request.getToAccountId());
-        if(toAccountWrap.isEmpty()) throw new AccountNotFoundException("To account not found");
-        Account toAccount = toAccountWrap.get();
+        User initiator = getLoggedInUser();
 
-        // Check if accounts are active
-        if(toAccount.getStatus() != AccountStatus.ACTIVE || fromAccount.getStatus() != AccountStatus.ACTIVE){
-            throw new AccountNotActiveException("To and from accounts must be active");
+        if(from == null){
+            if(to == null) throw new TransactionFormatException("Both sender's and receiver's account id is null");
+
+            return depositToAccount(request, to, initiator);
         }
-
-        // Check if accounts are not the same
-        if(toAccount.getAccountId() == fromAccount.getAccountId()){
-            throw new RuntimeException("To and from accounts must not be the same");
-        }
-
-        // Check if from or to accounts are savings. If they are, check if they are owned by the same person
-        if(fromAccount.getAccountType() == AccountType.SAVINGS || toAccount.getAccountType() == AccountType.SAVINGS){
-            if(fromAccount.getUser().getUserId() != toAccount.getUser().getUserId()){
-                throw new TransactionFromSavingAccountException("User can only transfer funds from savings account to their other account.");
+        else{
+            if(to == null){
+                return withdrawFromAccount(request, from, initiator);
+            }
+            else{
+                return transferBetweenAccounts(request, from, to, initiator);
             }
         }
+    }
 
-        // Check from transfer limit
-        if(fromAccount.getTransferLimit().compareTo(request.getTransferAmount()) < 0) {
-            throw new TransferAmountExceedLimitException("The transfer amount exceeds account limit");
-        }
+    private Account getAccountForTransaction(UUID accountId, String failMessage){
+        if(accountId == null) return null;
 
-        // Check fromAccount daily limit
-        if(fromAccount.getDailyLimit().compareTo(fromAccount.getTodayChange().add(request.getTransferAmount())) < 0){
-            throw new DailyLimitExceededException("From account daily limit exceeded");
-        }
+        var accountWrap = accountRepository.findByAccountId(accountId);
+        if(accountWrap.isEmpty()) throw new AccountNotFoundException(failMessage);
 
-        // Check toAccount daily limit
-        if(toAccount.getDailyLimit().compareTo(toAccount.getTodayChange().add(request.getTransferAmount())) < 0){
-            throw new DailyLimitExceededException("To account daily limit exceeded");
-        }
+        return accountWrap.get();
+    }
 
-        // Check if from account have enough funds to perform the transaction
-        if(fromAccount.getAbsoluteMinimum().compareTo(fromAccount.getBalance().subtract(request.getTransferAmount())) > 0){
-            throw new NotEnoughFundsException("Not enough funds in account to perform the transaction");
-        }
+    private User getLoggedInUser(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = auth.getName();
+
+        var wrap = userRepository.findByEmail(currentEmail);
+        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
+
+        return wrap.get();
+    }
+
+    private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){
+        // Enforce transaction policy
+        transactionPolicy.enforceTransferBetweenAccounts(request, fromAccount, toAccount, initiator);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -99,7 +104,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description(request.getDescription())
-                .type(TransactionType.CUSTOMER_TRANSFER)
+                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -111,10 +116,51 @@ public class TransactionService implements ITransactionService {
         // Add money to toAccount
         accountRepository.setAccountBalance(toAccount.getAccountId(), toAccount.getBalance().add(request.getTransferAmount()));
 
-        // Add to fromAccount's todayChange
-        accountRepository.setTodayChange(fromAccount.getAccountId(), fromAccount.getTodayChange().add(request.getTransferAmount()));
-        // Add to toAccount's todayChange
-        accountRepository.setTodayChange(toAccount.getAccountId(), toAccount.getTodayChange().add(request.getTransferAmount()));
+        return TransactionMapper.toDTO(trans);
+    }
+
+    private TransactionResponseDTO withdrawFromAccount(TransferRequestDTO request, Account fromAccount, User initiator){
+        // Enforce transaction policy
+        transactionPolicy.enforceWithdrawFromAccounts(request, fromAccount, initiator);
+
+        // Create transaction
+        Transaction trans = Transaction.builder()
+                .fromAccount(fromAccount)
+                .toAccount(null)
+                .amount(request.getTransferAmount())
+                .description("Withdrawal")
+                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Add transaction
+        transactionRepository.save(trans);
+
+        // Remove money from the account
+        accountRepository.setAccountBalance(fromAccount.getAccountId(), fromAccount.getBalance().subtract(request.getTransferAmount()));
+
+        return TransactionMapper.toDTO(trans);
+    }
+
+    private TransactionResponseDTO depositToAccount(TransferRequestDTO request, Account toAccount, User initiator){
+        // Enforce transaction policy
+        transactionPolicy.enforceDepositToAccounts(request, toAccount, initiator);
+
+        // Create transaction
+        Transaction trans = Transaction.builder()
+                .fromAccount(null)
+                .toAccount(toAccount)
+                .amount(request.getTransferAmount())
+                .description("Deposit")
+                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Add transaction
+        transactionRepository.save(trans);
+
+        // Add money to account
+        accountRepository.setAccountBalance(toAccount.getAccountId(), toAccount.getBalance().add(request.getTransferAmount()));
 
         return TransactionMapper.toDTO(trans);
     }
@@ -138,108 +184,5 @@ public class TransactionService implements ITransactionService {
         res.setCount(count);
 
         return res;
-    }
-
-    @Override
-    @Transactional
-    public TransactionResponseDTO withdrawFromAccount(WithdrawFromAccountRequestDTO request){
-        var fromAccountWrap = accountRepository.findByAccountId(request.getFromAccountId());
-        if(fromAccountWrap.isEmpty()) throw new AccountNotFoundException("Account not found");
-        Account fromAccount = fromAccountWrap.get();
-
-        // Check if account is active
-        if(fromAccount.getStatus() != AccountStatus.ACTIVE){
-            throw new AccountNotActiveException("Account is not active");
-        }
-
-        // Check if account is savings
-        if(fromAccount.getAccountType() == AccountType.SAVINGS){
-            throw new TransactionFromSavingAccountException("Withdraw from savings account is forbidden");
-        }
-
-        // Check transfer limit
-        if(fromAccount.getTransferLimit().compareTo(request.getWithdrawAmount()) < 0){
-            throw new TransferAmountExceedLimitException("Withdraw amount exceeds transfer limit)");
-        }
-
-        // Check fromAccount daily limit
-        if(fromAccount.getDailyLimit().compareTo(fromAccount.getTodayChange().add(request.getWithdrawAmount())) < 0){
-            throw new DailyLimitExceededException("Account's daily limit exceeded");
-        }
-
-        // Check if there is enough funds to perform the withdrawal
-        if(fromAccount.getAbsoluteMinimum().compareTo(fromAccount.getBalance().subtract(request.getWithdrawAmount())) > 0){
-            throw new NotEnoughFundsException("Not enough funds for the withdrawal");
-        }
-
-        // Create transaction
-        Transaction trans = Transaction.builder()
-                .fromAccount(fromAccount)
-                .toAccount(null)
-                .amount(request.getWithdrawAmount())
-                .description("Withdrawal")
-                .type(TransactionType.CUSTOMER_TRANSFER)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        // Add transaction
-        transactionRepository.save(trans);
-
-        // Remove money from the account
-        accountRepository.setAccountBalance(fromAccount.getAccountId(), fromAccount.getBalance().subtract(request.getWithdrawAmount()));
-
-        // Add to account's todayChange
-        accountRepository.setTodayChange(fromAccount.getAccountId(), fromAccount.getTodayChange().add(request.getWithdrawAmount()));
-
-        return TransactionMapper.toDTO(trans);
-    }
-
-    @Override
-    @Transactional
-    public TransactionResponseDTO depositToAccount(DepositToAccountRequestDTO request){
-        var toAccountWrap = accountRepository.findByAccountId(request.getToAccountId());
-        if(toAccountWrap.isEmpty()) throw new AccountNotFoundException("Account not found");
-        Account toAccount = toAccountWrap.get();
-
-        // Check if account is active
-        if(toAccount.getStatus() != AccountStatus.ACTIVE){
-            throw new AccountNotActiveException("Account is not active");
-        }
-
-        // Check if account is savings
-        if(toAccount.getAccountType() == AccountType.SAVINGS){
-            throw new TransactionFromSavingAccountException("Deposit to savings account is forbidden");
-        }
-
-        // Check transfer limit
-        if(toAccount.getTransferLimit().compareTo(request.getDepositAmount()) < 0){
-            throw new TransferAmountExceedLimitException("Deposit amount exceeds transfer limit");
-        }
-
-        // Check account's daily limit
-        if(toAccount.getDailyLimit().compareTo(toAccount.getTodayChange().add(request.getDepositAmount())) < 0){
-            throw new DailyLimitExceededException("Account's daily limit exceeded");
-        }
-
-        // Create transaction
-        Transaction trans = Transaction.builder()
-                .fromAccount(null)
-                .toAccount(toAccount)
-                .amount(request.getDepositAmount())
-                .description("Deposit")
-                .type(TransactionType.CUSTOMER_TRANSFER)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        // Add transaction
-        transactionRepository.save(trans);
-
-        // Add money to account
-        accountRepository.setAccountBalance(toAccount.getAccountId(), toAccount.getBalance().add(request.getDepositAmount()));
-
-        // Add to account's todayChange
-        accountRepository.setTodayChange(toAccount.getAccountId(), toAccount.getTodayChange().add(request.getDepositAmount()));
-
-        return TransactionMapper.toDTO(trans);
     }
 }

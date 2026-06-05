@@ -39,14 +39,6 @@ public class Account {
     @Column(name = "daily_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal dailyLimit;
 
-    /*
-     * Resets to 0 each day. Every debit adds to this.
-     * Used to enforce dailyLimit — scheduled job handles the reset.
-     */
-    @Column(name = "today_change", nullable = false, precision = 19, scale = 4)
-    @Builder.Default
-    private BigDecimal todayChange = BigDecimal.ZERO;
-
     @Column(name = "transfer_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal transferLimit;
 

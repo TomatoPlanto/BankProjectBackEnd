@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,4 +22,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
 
     @Query("SELECT COUNT(*) FROM Transaction t WHERE t.toAccount.accountId  = ?1 OR t.fromAccount.accountId = ?1")
     int countAllAccountTransactions(UUID accountId);
+
+    @Query("SELECT COUNT(*) FROM Transaction t WHERE t.createdAt >= ?2 AND (t.toAccount.accountId = ?1 OR t.fromAccount.accountId = ?1)")
+    String findAfterDateAccountChange(UUID accountId, LocalDateTime afterDate);
 }

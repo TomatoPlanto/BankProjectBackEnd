@@ -202,7 +202,7 @@ class BankingApplicationTests {
 	}
 
 	private Transaction createDefaultTransaction(Account fromAccount, Account toAccount, String amount){
-		return createCustomTransaction(fromAccount, toAccount, amount, "Default transaction", TransactionType.CUSOMER_TRANSFER);
+		return createCustomTransaction(fromAccount, toAccount, amount, "Default transaction", TransactionType.CUSTOMER_TRANSFER);
 	}
 
 	private Transaction createCustomTransaction(Account fromAccount, Account toAccount, String amount, String desc, TransactionType type){
