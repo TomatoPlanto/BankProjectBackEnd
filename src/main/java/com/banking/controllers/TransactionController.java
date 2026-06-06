@@ -7,6 +7,7 @@ import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.services.Interface.ITransactionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,15 +36,9 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/account")
-    public ResponseEntity<List<TransactionResponseDTO>> getAllAccountTransaction(@Valid @RequestBody GetAccountTransactionsRequestDTO request) {
-        List<TransactionResponseDTO> response = transactionService.getAccountTransactions(request);
+    @PostMapping("/account")
+    public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@Valid @RequestBody GetAccountTransactionsRequestDTO request) {
+        var response = transactionService.getAccountTransactions(request);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/account/count/{accountId}")
-    public CountResponseDTO getAllAccountTransaction(@PathVariable UUID accountId) {
-        CountResponseDTO response = transactionService.getAccountTransactionsCount(accountId);
-        return ResponseEntity.ok(response).getBody();
     }
 }

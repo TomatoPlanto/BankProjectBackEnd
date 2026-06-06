@@ -9,8 +9,6 @@ import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.Transaction;
 import com.banking.models.entities.User;
-import com.banking.models.enums.AccountStatus;
-import com.banking.models.enums.AccountType;
 import com.banking.models.enums.TransactionType;
 import com.banking.models.enums.UserRole;
 import com.banking.policy.TransactionPolicy;
@@ -18,19 +16,27 @@ import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
 import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.ITransactionService;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.Converter;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class TransactionService implements ITransactionService {
+    public final static List<String> ALLOWED_SORTINGS = Arrays.asList("amount", "type", "description", "createdAt");
+
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
@@ -166,14 +172,29 @@ public class TransactionService implements ITransactionService {
     }
 
     @Override
-    public List<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
+    public Page<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
         var account = accountRepository.findByAccountId(request.getAccountId());
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
 
-        return transactionRepository.findAccountTransactions(request.getAccountId(), PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage()))
-                .stream()
-                .map(TransactionMapper::toDTO)
-                .collect(Collectors.toList());
+        PageRequest pageReq;
+
+        if(!request.getSorting().isEmpty()){
+            if(!ALLOWED_SORTINGS.contains(request.getSorting())) throw new NotAllowedSortingFieldException("Sorting by unknown field");
+
+            if(request.isSortingOrder()){
+                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).ascending());
+            }
+            else {
+                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).descending());
+            }
+        }
+        else{
+            pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
+        }
+
+        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), pageReq);
+
+        return trans.map(TransactionMapper::toDTO);
     }
 
     @Override

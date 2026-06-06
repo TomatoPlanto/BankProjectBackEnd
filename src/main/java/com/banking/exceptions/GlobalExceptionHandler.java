@@ -82,6 +82,11 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(NotAllowedSortingFieldException.class)
+    public ResponseEntity<Map<String, String>> handleNotAllowedSortingField(NotAllowedSortingFieldException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -106,7 +111,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred; " + ex.getMessage()); // DEBUG ONLY !!!
+        //return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred"); // NORMAL
     }
 
     // helper

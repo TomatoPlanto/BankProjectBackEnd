@@ -16,11 +16,15 @@ public class GetAccountTransactionsRequestDTO {
     @NotNull(message = "Account id is required")
     private UUID accountId;
 
-    @NotBlank(message = "Page number is required")
-    @Min(value = 1, message = "Page number must be more than 0")
+    @Min(value = 0, message = "Page number must be more than 0")
     private int pageNumber;
 
-    @NotBlank(message = "Transactions per page is required")
     @Min(value = 1, message = "Transactions per page must be more than 0")
     private int transactionsPerPage;
+
+    @NotNull(message = "Sorting is required")
+    private String sorting;
+
+    @NotNull(message = "Sorting order is required")
+    private boolean sortingOrder;
 }

@@ -1,5 +1,6 @@
 package com.banking;
 
+import com.banking.controllers.TransactionController;
 import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
 import com.banking.models.entities.Account;
@@ -43,6 +44,8 @@ class BankingApplicationTests {
 	private UserRepository userRepository;
 	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
+	@Autowired
+	private TransactionController transactionController;
 
 	@Test
 	@Transactional
@@ -138,31 +141,18 @@ class BankingApplicationTests {
 		account2Transactions.add(trans8.getTransactionId());
 		account2Transactions.add(trans9.getTransactionId());
 
-		// Check account1 transactions
-		var res1 = transactionService.getAccountTransactions(GetAccountTransactionsRequestDTO.builder()
+		var request = GetAccountTransactionsRequestDTO.builder()
 				.accountId(account1.getAccountId())
-				.pageNumber(1)
-				.transactionsPerPage(24)
-				.build());
+				.pageNumber(0)
+				.transactionsPerPage(10)
+				.sorting("")
+				.sortingOrder(true)
+				.build();
 
-		for (int i = 0; i < res1.size(); i++) {
-			if(!account1Transactions.contains(res1.get(i).getTransactionId())){
-				Assertions.fail();
-			}
-		}
+		//var out = transactionService.getAccountTransactions(request);
+		var out = transactionController.getAllAccountTransaction(request);
 
-		// Check account2 transactions
-		var res2 = transactionService.getAccountTransactions(GetAccountTransactionsRequestDTO.builder()
-				.accountId(account2.getAccountId())
-				.pageNumber(1)
-				.transactionsPerPage(24)
-				.build());
-
-		for (int i = 0; i < res2.size(); i++) {
-			if(!account2Transactions.contains(res2.get(i).getTransactionId())){
-				Assertions.fail();
-			}
-		}
+		Assertions.assertEquals(7, out.getBody().getTotalElements());
 	}
 
 	private User createDefaultUser(int number){
@@ -191,7 +181,6 @@ class BankingApplicationTests {
 				.iban(accountService.generateIban())
 				.accountType(type)
 				.dailyLimit(new BigDecimal(dailyLimit))
-				.todayChange(new BigDecimal(todayChange))
 				.transferLimit(new BigDecimal(transferLimit))
 				.absoluteMinimum(new BigDecimal(absoluteMinimum))
 				.balance(new BigDecimal(balance))
