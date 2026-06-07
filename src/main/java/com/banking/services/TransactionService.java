@@ -172,15 +172,22 @@ public class TransactionService implements ITransactionService {
     }
 
     @Override
+    @Transactional
     public Page<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
+        // Get account and check if it exists
         var account = accountRepository.findByAccountId(request.getAccountId());
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
+
+        // Enforce get transactions policy
+        transactionPolicy.enforceGetAccountTransactions(account.get(), getLoggedInUser());
 
         PageRequest pageReq;
 
         if(!request.getSorting().isEmpty()){
+            // Check if sorting field is allowed
             if(!ALLOWED_SORTINGS.contains(request.getSorting())) throw new NotAllowedSortingFieldException("Sorting by unknown field");
 
+            // Use sorting and order
             if(request.isSortingOrder()){
                 pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).ascending());
             }
@@ -192,8 +199,10 @@ public class TransactionService implements ITransactionService {
             pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
         }
 
+        // Get transactions
         var trans = transactionRepository.findAccountTransactions(request.getAccountId(), pageReq);
 
+        // Map transactions to DTO
         return trans.map(TransactionMapper::toDTO);
     }
 
