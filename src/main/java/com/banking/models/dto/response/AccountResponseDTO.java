@@ -23,5 +23,5 @@ public class AccountResponseDTO {
     private BigDecimal transferLimit;
     private BigDecimal absoluteMinimum;
     private AccountStatus status;
-    private int pin;
+    // pin intentionally omitted — never expose ATM PIN over REST
 }

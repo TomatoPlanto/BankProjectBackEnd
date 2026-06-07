@@ -39,12 +39,13 @@ public class Account {
     @Column(name = "daily_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal dailyLimit;
 
-    @Column(name = "today_change", nullable = false, precision = 19, scale = 4)
-    private BigDecimal todayChange = BigDecimal.ZERO;
-
     @Column(name = "transfer_limit", nullable = false, precision = 19, scale = 4)
     private BigDecimal transferLimit;
 
+    /*
+     * Floor — balance can never drop below this.
+     * Checked before every debit in TransactionService.
+     */
     @Column(name = "absolute_minimum", nullable = false, precision = 19, scale = 4)
     @Builder.Default
     private BigDecimal absoluteMinimum = BigDecimal.ZERO;
@@ -54,19 +55,13 @@ public class Account {
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
 
-    @Column(name = "pin", nullable = false)
-    private int pin;
-
-
-
-//   @OneToMany(mappedBy = "fromAccount", fetch = FetchType.LAZY)
-//    private List<Transaction> outgoingTransactions;
-//
-//    @OneToMany(mappedBy = "toAccount", fetch = FetchType.LAZY)
-//    private List<Transaction> incomingTransactions;
-//
-//    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-//    private List<AtmInteraction> atmInteractions;
+    /*
+     * ATM PIN — never exposed in AccountResponseDTO.
+     * 0 = unset sentinel. ATM won't accept it (valid range 1000-9999).
+     */
+    @Column(name = "pin", nullable = false, length = 4)
+    @Builder.Default
+    private String pin = "0123";
 
     public boolean canDebit(BigDecimal amount) {
         return balance.subtract(amount).compareTo(absoluteMinimum) >= 0;

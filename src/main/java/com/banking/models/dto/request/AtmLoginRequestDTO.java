@@ -10,9 +10,11 @@ import lombok.Setter;
 public class AtmLoginRequestDTO {
 
     @NotBlank(message = "IBAN is required")
-    @Pattern(regexp = "\\d{9}", message = "BSN must contain only digits") // need to alter this one, just as a reference fo now
+    @Pattern(regexp = "^NL\\d{2}INHO0\\d{10}$", message = "IBAN must be NLxxINHO0xxxxxxxxx")
     private String iban;
 
-    @NotBlank(message = "Pin is required")
-    private int pin;
+    @NotBlank
+    @Pattern(regexp = "\\d{4}", message = "PIN must be 4 digits")
+    private String pin;
+
 }

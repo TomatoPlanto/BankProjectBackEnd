@@ -1,21 +1,21 @@
 package com.banking.models.dto.request;
 
-import com.banking.models.enums.AccountType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
 @Setter
-public class TransferBetweenAccountsRequestDTO {
-    @NotNull(message = "From account id is required")
+public class TransferRequestDTO {
+    @Nullable
     private UUID fromAccountId;
 
-    @NotNull(message = "To account id is required")
+    @Nullable
     private UUID toAccountId;
 
     @NotNull(message = "Transfer amount is required")

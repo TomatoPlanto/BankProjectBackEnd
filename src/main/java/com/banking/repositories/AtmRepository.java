@@ -11,5 +11,5 @@ import com.banking.models.entities.Account;
 
 @Repository
 public interface AtmRepository extends JpaRepository<Account, UUID> {
-    Optional<User> findByIban(String iban);
+    Optional<Account> findByIban(String iban);
 }

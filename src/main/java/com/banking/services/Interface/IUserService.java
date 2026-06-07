@@ -13,6 +13,9 @@ public interface IUserService {
 
     UserResponseDTO getUserById(UUID userId);
 
+    // Resolves JWT email to full profile — used by /api/users/me
+    UserResponseDTO getUserByEmail(String email);
+
     List<UserResponseDTO> getAllUsers();
 
     List<UserResponseDTO> getUsersByStatus(UserStatus status);

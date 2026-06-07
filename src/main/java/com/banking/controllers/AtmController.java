@@ -1,16 +1,16 @@
 package com.banking.controllers;
 
+import com.banking.models.dto.request.AtmLoginRequestDTO;
 import com.banking.models.dto.request.UpdateBalanceRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
 import com.banking.services.Interface.IAccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.banking.models.dto.request.AtmLoginRequestDTO;
 import com.banking.models.dto.response.LoginResponseDTO;
 import com.banking.services.Interface.IAtmService;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 import jakarta.validation.Valid;
 
 import java.util.UUID;
@@ -28,8 +28,8 @@ public class AtmController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> atmLogin(@Valid @RequestBody AtmLoginRequestDTO request) {
-        LoginResponseDTO response = atmService.atmLogin(request);
+    public ResponseEntity<AccountResponseDTO> atmLogin(@Valid @RequestBody AtmLoginRequestDTO request) {
+        AccountResponseDTO response = atmService.atmLogin(request);
         return ResponseEntity.ok(response);
     }
 
