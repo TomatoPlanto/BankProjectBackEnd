@@ -83,7 +83,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("2500.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin(1234)
+                .pin("1234")
                 .build());
 
         accountRepository.save(Account.builder()
@@ -95,7 +95,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("5000.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin(1234)
+                .pin("1234")
                 .build());
 
         return checking;
@@ -124,7 +124,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("1500.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin(5678)
+                .pin("5678")
                 .build());
 
         accountRepository.save(Account.builder()
@@ -136,7 +136,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("3000.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin(5678)
+                .pin("5678")
                 .build());
 
         return checking;

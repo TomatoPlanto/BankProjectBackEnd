@@ -108,7 +108,7 @@ public class UserService implements IUserService {
                 .dailyLimit(new BigDecimal("1000.00"))
                 .transferLimit(new BigDecimal("500.00"))
                 .absoluteMinimum(BigDecimal.ZERO)
-                .pin(0)
+                .pin("0")
                 .build());
 
         accountRepository.save(Account.builder()
@@ -118,7 +118,7 @@ public class UserService implements IUserService {
                 .dailyLimit(new BigDecimal("1000.00"))
                 .transferLimit(new BigDecimal("500.00"))
                 .absoluteMinimum(BigDecimal.ZERO)
-                .pin(0)
+                .pin("0")
                 .build());
 
         return UserMapper.toDTO(saved);
