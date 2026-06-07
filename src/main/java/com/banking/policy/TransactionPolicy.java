@@ -1,6 +1,7 @@
 package com.banking.policy;
 
 import com.banking.exceptions.*;
+import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.User;
@@ -18,12 +19,17 @@ import java.util.UUID;
 
 @Component
 public class TransactionPolicy {
-    private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
-    public TransactionPolicy(AccountRepository accountRepository, TransactionRepository transactionRepository) {
-        this.accountRepository = accountRepository;
+    public TransactionPolicy(TransactionRepository transactionRepository) {
         this.transactionRepository = transactionRepository;
+    }
+
+    public void enforceGetAccountTransactions(Account account, User initiator) {
+        // Check request initiator
+        if(account.getUser().getUserId() != initiator.getUserId()){
+            if(initiator.getRole() != UserRole.EMPLOYEE) throw new AccessDeniedException("Only owner of the account can view its transactions");
+        }
     }
 
     public void enforceTransferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){
