@@ -20,6 +20,9 @@ public interface IUserService {
 
     List<UserResponseDTO> getUsersByStatus(UserStatus status);
 
+    // Search by first or last name — employee user search feature
+    List<UserResponseDTO> searchByName(String name);
+
     UserResponseDTO approveUser(UUID userId);
 
     UserResponseDTO closeUser(UUID userId);

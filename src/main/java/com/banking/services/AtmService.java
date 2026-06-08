@@ -7,7 +7,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
-
 import com.banking.exceptions.UserNotFoundException;
 import com.banking.models.dto.request.AtmLoginRequestDTO;
 import com.banking.models.dto.response.LoginResponseDTO;
@@ -32,25 +31,12 @@ public class AtmService implements IAtmService {
 
     @Override
     public AccountResponseDTO atmLogin(AtmLoginRequestDTO request) {
-
-        System.out.println("Step 1");
-
         Account account = atmRepository.findByIban(request.getIban())
                 .orElseThrow(() -> new UserNotFoundException("Account not found"));
 
-        if (!account.getPin().equals(request.getPin())) {
+        if (account.getPin() != request.getPin()) {
             throw new BadCredentialsException("Invalid PIN");
         }
-
-        System.out.println("Step 2");
-
-//        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getIban());
-//
-//        System.out.println("Step 3");
-//
-//        String token = jwtService.generateToken(userDetails);
-
-        System.out.println("Step 4");
 
         return AccountResponseDTO.builder()
                 .accountId(account.getAccountId())
@@ -61,12 +47,6 @@ public class AtmService implements IAtmService {
 
     @Override
     public LoginResponseDTO updateBalance(UpdateBalanceRequestDTO request) {
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
-//
-//        user.setStatus(UserStatus.ACTIVE);
-//        User savedUser = userRepository.save(user);
-//        return UserMapper.toDTO(savedUser);
-        return null;
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

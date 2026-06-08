@@ -29,6 +29,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.banking.exceptions.DuplicateEmailException;
+import com.banking.models.dto.request.RegisterRequestDTO;
+import com.banking.models.enums.AccountType;
+import com.banking.services.UserService;
+import com.banking.services.AccountService;
+import java.util.List;
 
 @SpringBootTest
 class BankingApplicationTests {
@@ -46,6 +52,8 @@ class BankingApplicationTests {
 	private BCryptPasswordEncoder passwordEncoder;
 	@Autowired
 	private TransactionController transactionController;
+	@Autowired
+	private UserService userService;
 
 	@Test
 	@Transactional
@@ -145,8 +153,8 @@ class BankingApplicationTests {
 				.accountId(account1.getAccountId())
 				.pageNumber(0)
 				.transactionsPerPage(10)
-				.sorting("")
-				.sortingOrder(true)
+//				.sorting("")
+//				.sortingOrder(true)
 				.build();
 
 		//var out = transactionService.getAccountTransactions(request);
@@ -206,5 +214,65 @@ class BankingApplicationTests {
 		transactionRepository.save(trans);
 
 		return trans;
+	}
+
+	@Test
+	@Transactional
+	void approveUser_createsTwoAccounts() {
+		User user = userRepository.save(User.builder()
+				.email("testapprove@email.com")
+				.passwordHash(passwordEncoder.encode("password123"))
+				.firstName("Test")
+				.lastName("User")
+				.bsn("111222333")
+				.phoneNumber("0611111111")
+				.role(UserRole.CUSTOMER)
+				.status(UserStatus.PENDING)
+				.build());
+
+		userService.approveUser(user.getUserId());
+
+		List<Account> accounts = accountRepository.findByUserUserId(user.getUserId());
+		Assertions.assertEquals(2, accounts.size());
+
+		boolean hasChecking = accounts.stream().anyMatch(a -> a.getAccountType() == AccountType.CHECKING);
+		boolean hasSavings  = accounts.stream().anyMatch(a -> a.getAccountType() == AccountType.SAVINGS);
+
+		Assertions.assertTrue(hasChecking);
+		Assertions.assertTrue(hasSavings);
+	}
+
+	@Test
+	@Transactional
+	void register_duplicateEmail_throwsException() {
+		RegisterRequestDTO request = new RegisterRequestDTO();
+		request.setEmail("duplicate@email.com");
+		request.setPassword("password123");
+		request.setFirstName("John");
+		request.setLastName("Doe");
+		request.setBsn("999888777");
+		request.setPhoneNumber("0699999999");
+
+		userService.register(request);
+
+		RegisterRequestDTO duplicate = new RegisterRequestDTO();
+		duplicate.setEmail("duplicate@email.com");
+		duplicate.setPassword("password123");
+		duplicate.setFirstName("Jane");
+		duplicate.setLastName("Doe");
+		duplicate.setBsn("777888999");
+		duplicate.setPhoneNumber("0677777777");
+
+		Assertions.assertThrows(DuplicateEmailException.class, () -> userService.register(duplicate));
+	}
+
+	@Test
+	void generateIban_returnsValidFormat() {
+		String iban = accountService.generateIban();
+
+		Assertions.assertTrue(iban.startsWith("NL"));
+		Assertions.assertTrue(iban.contains("INHO"));
+		Assertions.assertEquals(18, iban.length());
+		Assertions.assertFalse(accountRepository.existsByIban(iban));
 	}
 }

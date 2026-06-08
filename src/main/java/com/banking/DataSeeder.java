@@ -83,7 +83,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("2500.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin("1234")
+                .pin(1234)
                 .build());
 
         accountRepository.save(Account.builder()
@@ -95,7 +95,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("5000.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin("1234")
+                .pin(1234)
                 .build());
 
         return checking;
@@ -124,7 +124,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("1500.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin("5678")
+                .pin(5678)
                 .build());
 
         accountRepository.save(Account.builder()
@@ -136,7 +136,7 @@ public class DataSeeder implements ApplicationRunner {
                 .absoluteMinimum(BigDecimal.ZERO)
                 .balance(new BigDecimal("3000.00"))
                 .status(AccountStatus.ACTIVE)
-                .pin("5678")
+                .pin(5678)
                 .build());
 
         return checking;
@@ -149,31 +149,21 @@ public class DataSeeder implements ApplicationRunner {
     private void seedTransactions(Account johnChecking, Account janeChecking) {
         if (johnChecking == null || janeChecking == null) return;
 
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(1)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(1)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "134.55", "Transfer to Jane", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(9)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(11)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(10)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(4)));
+        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane"));
+        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John"));
+        transactionRepository.save(txn(johnChecking, janeChecking, "134.55", "Transfer to Jane"));
+        transactionRepository.save(txn(null,         janeChecking, "134.55", "ATM deposit"));
+        transactionRepository.save(txn(janeChecking, null,         "134.55", "ATM withdrawal"));
     }
 
-    private Transaction txn(Account from, Account to, String amount, String desc, LocalDateTime dateTime) {
+    private Transaction txn(Account from, Account to, String amount, String desc) {
         return Transaction.builder()
                 .fromAccount(from)
                 .toAccount(to)
                 .amount(new BigDecimal(amount))
                 .description(desc)
                 .type(TransactionType.CUSTOMER_TRANSFER)
-                .createdAt(dateTime)
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 

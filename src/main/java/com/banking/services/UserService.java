@@ -13,6 +13,7 @@ import com.banking.models.enums.UserStatus;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.IUserService;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -41,12 +42,12 @@ public class UserService implements IUserService {
 
     @Override
     public UserResponseDTO register(RegisterRequestDTO request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail()))
             throw new DuplicateEmailException("Email already in use");
-        }
-        if (userRepository.existsByBsn(request.getBsn())) {
+
+        if (userRepository.existsByBsn(request.getBsn()))
             throw new DuplicateBsnException("BSN already registered");
-        }
+
         User user = UserMapper.toEntity(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         return UserMapper.toDTO(userRepository.save(user));
@@ -54,22 +55,18 @@ public class UserService implements IUserService {
 
     @Override
     public UserResponseDTO getUserById(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(
-                        "User not found with id: " + userId));
-        return UserMapper.toDTO(user);
+        return UserMapper.toDTO(
+                userRepository.findById(userId)
+                        .orElseThrow(() -> new UserNotFoundException("User not found: " + userId))
+        );
     }
 
-    /*
-     * Called by GET /api/users/me — avoids customer calling getAllUsers()
-     * which is employee-only and would 403.
-     */
     @Override
     public UserResponseDTO getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(
-                        "User not found with email: " + email));
-        return UserMapper.toDTO(user);
+        return UserMapper.toDTO(
+                userRepository.findByEmail(email)
+                        .orElseThrow(() -> new UserNotFoundException("User not found: " + email))
+        );
     }
 
     @Override
@@ -88,15 +85,20 @@ public class UserService implements IUserService {
                 .collect(Collectors.toList());
     }
 
-    /*
-     * Approving auto-creates both account types with sane defaults.
-     * pin=0 is unset — employee sets real limits/PIN separately.
-     */
     @Override
+    public List<UserResponseDTO> searchByName(String name) {
+        return userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(name, name)
+                .stream()
+                .map(UserMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
     public UserResponseDTO approveUser(UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(
-                        "User not found with id: " + userId));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
 
         user.setStatus(UserStatus.ACTIVE);
         User saved = userRepository.save(user);
@@ -108,7 +110,7 @@ public class UserService implements IUserService {
                 .dailyLimit(new BigDecimal("1000.00"))
                 .transferLimit(new BigDecimal("500.00"))
                 .absoluteMinimum(BigDecimal.ZERO)
-                .pin("0")
+                .pin(0)
                 .build());
 
         accountRepository.save(Account.builder()
@@ -118,7 +120,7 @@ public class UserService implements IUserService {
                 .dailyLimit(new BigDecimal("1000.00"))
                 .transferLimit(new BigDecimal("500.00"))
                 .absoluteMinimum(BigDecimal.ZERO)
-                .pin("0")
+                .pin(0)
                 .build());
 
         return UserMapper.toDTO(saved);
@@ -127,8 +129,8 @@ public class UserService implements IUserService {
     @Override
     public UserResponseDTO closeUser(UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(
-                        "User not found with id: " + userId));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + userId));
+
         user.setStatus(UserStatus.CLOSED);
         return UserMapper.toDTO(userRepository.save(user));
     }

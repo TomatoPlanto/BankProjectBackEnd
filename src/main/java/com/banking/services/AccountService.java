@@ -33,7 +33,8 @@ public class AccountService implements IAccountService {
     @Override
     public AccountResponseDTO createAccount(CreateAccountRequestDTO request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + request.getUserId()));
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User not found: " + request.getUserId()));
 
         Account account = Account.builder()
                 .user(user)
@@ -43,17 +44,28 @@ public class AccountService implements IAccountService {
                 .transferLimit(request.getTransferLimit())
                 .absoluteMinimum(request.getAbsoluteMinimum())
                 .balance(BigDecimal.ZERO)
+                .pin(0)
                 .build();
 
-        Account saved = accountRepository.save(account);
-        return AccountMapper.toDTO(saved);
+        return AccountMapper.toDTO(accountRepository.save(account));
     }
 
     @Override
     public AccountResponseDTO getAccountById(UUID accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
-        return AccountMapper.toDTO(account);
+        return AccountMapper.toDTO(
+                accountRepository.findById(accountId)
+                        .orElseThrow(() -> new AccountNotFoundException(
+                                "Account not found: " + accountId))
+        );
+    }
+
+    @Override
+    public AccountResponseDTO getAccountByIban(String iban) {
+        return AccountMapper.toDTO(
+                accountRepository.findByIban(iban)
+                        .orElseThrow(() -> new AccountNotFoundException(
+                                "Account not found for IBAN: " + iban))
+        );
     }
 
     @Override
@@ -75,47 +87,57 @@ public class AccountService implements IAccountService {
     @Override
     public AccountResponseDTO updateLimits(UUID accountId, UpdateAccountLimitsRequestDTO request) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException(
+                        "Account not found: " + accountId));
 
         account.setDailyLimit(request.getDailyLimit());
         account.setTransferLimit(request.getTransferLimit());
         account.setAbsoluteMinimum(request.getAbsoluteMinimum());
 
-        Account saved = accountRepository.save(account);
-        return AccountMapper.toDTO(saved);
+        return AccountMapper.toDTO(accountRepository.save(account));
     }
 
     @Override
     public AccountResponseDTO closeAccount(UUID accountId) {
         Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
+                .orElseThrow(() -> new AccountNotFoundException(
+                        "Account not found: " + accountId));
 
         account.setStatus(AccountStatus.CLOSED);
-        Account saved = accountRepository.save(account);
-        return AccountMapper.toDTO(saved);
+        return AccountMapper.toDTO(accountRepository.save(account));
+    }
+
+    @Override
+    public AccountResponseDTO reactivateAccount(UUID accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(
+                        "Account not found: " + accountId));
+
+        account.setStatus(AccountStatus.ACTIVE);
+        return AccountMapper.toDTO(accountRepository.save(account));
     }
 
     public String generateIban() {
         String bankCode = "INHO";
-        String accountNumber = String.format("%010d",
-                (long) (Math.random() * 9_000_000_000L) + 1_000_000_000L);
-        String rawIban = "NL00" + bankCode + "0" + accountNumber;
-        int checkDigits = calculateCheckDigits(rawIban);
-        return "NL" + String.format("%02d", checkDigits) + bankCode + "0" + accountNumber;
+        String iban;
+        do {
+            String accountNum = String.format("%010d",
+                    (long)(Math.random() * 9_000_000_000L) + 1_000_000_000L);
+            String rawIban = "NL00" + bankCode + "0" + accountNum;
+            int checkDigits = calculateCheckDigits(rawIban);
+            iban = "NL" + String.format("%02d", checkDigits) + bankCode + "0" + accountNum;
+        } while (accountRepository.existsByIban(iban));
+        return iban;
     }
 
     public int calculateCheckDigits(String rawIban) {
         String rearranged = rawIban.substring(4) + rawIban.substring(0, 4);
-        StringBuilder numericIban = new StringBuilder();
+        StringBuilder numeric = new StringBuilder();
         for (char c : rearranged.toCharArray()) {
-            if (Character.isLetter(c)) {
-                numericIban.append(c - 'A' + 10);
-            } else {
-                numericIban.append(c);
-            }
+            numeric.append(Character.isLetter(c) ? (c - 'A' + 10) : c);
         }
-        java.math.BigInteger ibanNumber = new java.math.BigInteger(numericIban.toString());
-        int remainder = ibanNumber.mod(java.math.BigInteger.valueOf(97)).intValue();
+        int remainder = new java.math.BigInteger(numeric.toString())
+                .mod(java.math.BigInteger.valueOf(97)).intValue();
         return 98 - remainder;
     }
 }

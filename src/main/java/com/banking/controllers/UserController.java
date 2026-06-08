@@ -28,7 +28,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    // Public — no token needed
     @PostMapping("/register")
     @Operation(summary = "Register as a new customer")
     public ResponseEntity<UserResponseDTO> register(
@@ -37,21 +36,16 @@ public class UserController {
                 .body(userService.register(request));
     }
 
-    /*
-     * Customer calls this to get their own profile.
-     * Avoids hitting GET /api/users which is employee-only.
-     */
     @GetMapping("/me")
     @Operation(summary = "Get own profile from JWT")
     public ResponseEntity<UserResponseDTO> getMe(
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(
-                userService.getUserByEmail(userDetails.getUsername()));
+        return ResponseEntity.ok(userService.getUserByEmail(userDetails.getUsername()));
     }
 
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "Get any user by ID — employee only")
+    @Operation(summary = "Get user by ID — employee only")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.getUserById(userId));
     }
@@ -71,16 +65,22 @@ public class UserController {
         return ResponseEntity.ok(userService.getUsersByStatus(status));
     }
 
+    @GetMapping("/search")
+    @Operation(summary = "Search users by name")
+    public ResponseEntity<List<UserResponseDTO>> searchByName(@RequestParam String name) {
+        return ResponseEntity.ok(userService.searchByName(name));
+    }
+
     @PutMapping("/{userId}/approve")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "Approve pending customer, auto-creates checking + savings")
+    @Operation(summary = "Approve pending customer — auto creates checking + savings")
     public ResponseEntity<UserResponseDTO> approveUser(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.approveUser(userId));
     }
 
     @PutMapping("/{userId}/close")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "Close a customer account")
+    @Operation(summary = "Close a customer — employee only")
     public ResponseEntity<UserResponseDTO> closeUser(@PathVariable UUID userId) {
         return ResponseEntity.ok(userService.closeUser(userId));
     }

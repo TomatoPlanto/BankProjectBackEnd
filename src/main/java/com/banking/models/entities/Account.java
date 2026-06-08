@@ -61,7 +61,7 @@ public class Account {
      */
     @Column(name = "pin", nullable = false, length = 4)
     @Builder.Default
-    private String pin = "0123";
+    private int pin = 0;
 
     public boolean canDebit(BigDecimal amount) {
         return balance.subtract(amount).compareTo(absoluteMinimum) >= 0;

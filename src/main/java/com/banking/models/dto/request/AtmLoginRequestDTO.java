@@ -1,5 +1,7 @@
 package com.banking.models.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -13,8 +15,8 @@ public class AtmLoginRequestDTO {
     @Pattern(regexp = "^NL\\d{2}INHO0\\d{10}$", message = "IBAN must be NLxxINHO0xxxxxxxxx")
     private String iban;
 
-    @NotBlank
-    @Pattern(regexp = "\\d{4}", message = "PIN must be 4 digits")
-    private String pin;
+    @Min(value = 1000, message = "PIN must be 4 digits")
+    @Max(value = 9999, message = "PIN must be 4 digits")
+    private int pin;
 
 }

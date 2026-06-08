@@ -13,6 +13,8 @@ public interface IAccountService {
 
     AccountResponseDTO getAccountById(UUID accountId);
 
+    AccountResponseDTO getAccountByIban(String iban);
+
     List<AccountResponseDTO> getAccountsByUserId(UUID userId);
 
     List<AccountResponseDTO> getAllAccounts();
@@ -20,4 +22,6 @@ public interface IAccountService {
     AccountResponseDTO updateLimits(UUID accountId, UpdateAccountLimitsRequestDTO request);
 
     AccountResponseDTO closeAccount(UUID accountId);
+
+    AccountResponseDTO reactivateAccount(UUID accountId);
 }

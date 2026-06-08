@@ -5,6 +5,7 @@ import com.banking.models.dto.request.LoginRequestDTO;
 import com.banking.models.dto.response.LoginResponseDTO;
 import com.banking.repositories.UserRepository;
 import com.banking.security.JwtService;
+import com.banking.models.entities.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,18 +39,16 @@ public class AuthService {
         );
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-
         String token = jwtService.generateToken(userDetails);
 
-        String role = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UserNotFoundException("User not found"))
-                .getRole()
-                .name();
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         return LoginResponseDTO.builder()
                 .token(token)
-                .role(role)
-                .email(request.getEmail())
+                .role(user.getRole().name())
+                .email(user.getEmail())
+                .userId(user.getUserId())
                 .build();
     }
 }
