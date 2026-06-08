@@ -36,6 +36,12 @@ public class AccountController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/iban/{iban}")
+    public ResponseEntity<AccountResponseDTO> getAccountById(@PathVariable String iban) {
+        AccountResponseDTO response = accountService.getAccountByIban(iban);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<AccountResponseDTO>> getAccountsByUserId(@PathVariable UUID userId) {
         List<AccountResponseDTO> response = accountService.getAccountsByUserId(userId);
