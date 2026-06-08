@@ -1,9 +1,10 @@
 package com.banking.services;
 
 import com.banking.models.dto.request.UpdateBalanceRequestDTO;
+import com.banking.models.dto.response.AccountResponseDTO;
+import com.banking.models.entities.Account;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
@@ -30,26 +31,31 @@ public class AtmService implements IAtmService {
     }
 
     @Override
-    public LoginResponseDTO atmLogin(AtmLoginRequestDTO request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getIban(),
-                        request.getPin()
-                )
-        );
+    public AccountResponseDTO atmLogin(AtmLoginRequestDTO request) {
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getIban());
+        System.out.println("Step 1");
 
-        String token = jwtService.generateToken(userDetails);
+        Account account = atmRepository.findByIban(request.getIban())
+                .orElseThrow(() -> new UserNotFoundException("Account not found"));
 
-        String role = atmRepository.findByIban(request.getIban())
-                .orElseThrow(() -> new UserNotFoundException("User not found"))
-                .getRole()
-                .name();
+        if (!account.getPin().equals(request.getPin())) {
+            throw new BadCredentialsException("Invalid PIN");
+        }
 
-        return LoginResponseDTO.builder()
-                .token(token)
-                .role(role)
+        System.out.println("Step 2");
+
+//        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getIban());
+//
+//        System.out.println("Step 3");
+//
+//        String token = jwtService.generateToken(userDetails);
+
+        System.out.println("Step 4");
+
+        return AccountResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .iban(account.getIban())
+                .balance(account.getBalance())
                 .build();
     }
 

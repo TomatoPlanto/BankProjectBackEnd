@@ -59,9 +59,9 @@ public class Account {
      * ATM PIN — never exposed in AccountResponseDTO.
      * 0 = unset sentinel. ATM won't accept it (valid range 1000-9999).
      */
-    @Column(name = "pin", nullable = false)
+    @Column(name = "pin", nullable = false, length = 4)
     @Builder.Default
-    private int pin = 0;
+    private String pin = "0123";
 
     public boolean canDebit(BigDecimal amount) {
         return balance.subtract(amount).compareTo(absoluteMinimum) >= 0;

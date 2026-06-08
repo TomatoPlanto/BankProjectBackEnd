@@ -44,8 +44,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/api-docs/**",
                                 "/v3/api-docs/**"
-                        ).permitAll()
-                        .requestMatchers("/api/users/register").permitAll()
+                        ).permitAll() 
+                        .requestMatchers("/api/users/register", "/api/atm/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
