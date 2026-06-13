@@ -57,6 +57,13 @@ public class AccountService implements IAccountService {
     }
 
     @Override
+    public AccountResponseDTO getAccountByIban(String iban) {
+        Account account = accountRepository.findByIban(iban)
+                .orElseThrow(() -> new AccountNotFoundException("Account not with iban was not found"));
+        return AccountMapper.toDTO(account);
+    }
+
+    @Override
     public List<AccountResponseDTO> getAccountsByUserId(UUID userId) {
         return accountRepository.findByUserUserId(userId)
                 .stream()

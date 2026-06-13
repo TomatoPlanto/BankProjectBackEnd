@@ -13,6 +13,8 @@ public interface IAccountService {
 
     AccountResponseDTO getAccountById(UUID accountId);
 
+    AccountResponseDTO getAccountByIban(String iban);
+
     List<AccountResponseDTO> getAccountsByUserId(UUID userId);
 
     List<AccountResponseDTO> getAllAccounts();
