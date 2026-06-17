@@ -3,6 +3,8 @@ package com.banking.services.Interface;
 import com.banking.models.dto.request.RegisterRequestDTO;
 import com.banking.models.dto.response.UserResponseDTO;
 import com.banking.models.enums.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,9 +18,9 @@ public interface IUserService {
     // Resolves JWT email to full profile — used by /api/users/me
     UserResponseDTO getUserByEmail(String email);
 
-    List<UserResponseDTO> getAllUsers();
+    Page<UserResponseDTO> getAllUsers(Pageable pageable);
 
-    List<UserResponseDTO> getUsersByStatus(UserStatus status);
+    Page<UserResponseDTO> getUsersByStatus(UserStatus status, Pageable pageable);
 
     UserResponseDTO approveUser(UUID userId);
 

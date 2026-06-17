@@ -3,6 +3,8 @@ package com.banking.repositories;
 import com.banking.models.entities.User;
 import com.banking.models.enums.UserRole;
 import com.banking.models.enums.UserStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,6 +22,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByBsn(String bsn);
 
     List<User> findByStatus(UserStatus status);
+
+    Page<User> findByStatus(UserStatus status, Pageable pageable);
 
     List<User> findByRole(UserRole role);
 
