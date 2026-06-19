@@ -13,6 +13,8 @@ import com.banking.models.enums.UserStatus;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.IUserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -73,19 +75,13 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public List<UserResponseDTO> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserMapper::toDTO)
-                .collect(Collectors.toList());
+    public Page<UserResponseDTO> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(UserMapper::toDTO);
     }
 
     @Override
-    public List<UserResponseDTO> getUsersByStatus(UserStatus status) {
-        return userRepository.findByStatus(status)
-                .stream()
-                .map(UserMapper::toDTO)
-                .collect(Collectors.toList());
+    public Page<UserResponseDTO> getUsersByStatus(UserStatus status, Pageable pageable) {
+        return userRepository.findByStatus(status, pageable).map(UserMapper::toDTO);
     }
 
     /*

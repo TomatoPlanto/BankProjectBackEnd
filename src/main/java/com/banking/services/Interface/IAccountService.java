@@ -1,8 +1,10 @@
 package com.banking.services.Interface;
 
 import com.banking.models.dto.request.CreateAccountRequestDTO;
-import com.banking.models.dto.request.UpdateAccountLimitsRequestDTO;
+import com.banking.models.dto.request.UpdateAccountRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,9 +19,7 @@ public interface IAccountService {
 
     List<AccountResponseDTO> getAccountsByUserId(UUID userId);
 
-    List<AccountResponseDTO> getAllAccounts();
+    Page<AccountResponseDTO> getAllAccounts(Pageable pageable);
 
-    AccountResponseDTO updateLimits(UUID accountId, UpdateAccountLimitsRequestDTO request);
-
-    AccountResponseDTO closeAccount(UUID accountId);
+    AccountResponseDTO updateAccount(UUID accountId, UpdateAccountRequestDTO request);
 }

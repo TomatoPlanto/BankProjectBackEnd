@@ -4,7 +4,7 @@ import com.banking.exceptions.AccountNotFoundException;
 import com.banking.exceptions.UserNotFoundException;
 import com.banking.mappers.AccountMapper;
 import com.banking.models.dto.request.CreateAccountRequestDTO;
-import com.banking.models.dto.request.UpdateAccountLimitsRequestDTO;
+import com.banking.models.dto.request.UpdateAccountRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.User;
@@ -12,7 +12,10 @@ import com.banking.models.enums.AccountStatus;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.UserRepository;
 import com.banking.services.Interface.IAccountService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,6 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class AccountService implements IAccountService {
 
     private final AccountRepository accountRepository;
@@ -72,34 +76,27 @@ public class AccountService implements IAccountService {
     }
 
     @Override
-    public List<AccountResponseDTO> getAllAccounts() {
-        return accountRepository.findAll()
-                .stream()
-                .map(AccountMapper::toDTO)
-                .collect(Collectors.toList());
+    public Page<AccountResponseDTO> getAllAccounts(Pageable pageable) {
+        return accountRepository.findAll(pageable)
+                .map(AccountMapper::toDTO);
     }
 
+    /*
+     * Partial update: only non-null fields are applied, so one endpoint
+     * covers "update a limit", "update all limits", "close", "re-open",
+     * or any combination. Employee-only (enforced in the controller).
+     */
     @Override
-    public AccountResponseDTO updateLimits(UUID accountId, UpdateAccountLimitsRequestDTO request) {
+    public AccountResponseDTO updateAccount(UUID accountId, UpdateAccountRequestDTO request) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
 
-        account.setDailyLimit(request.getDailyLimit());
-        account.setTransferLimit(request.getTransferLimit());
-        account.setAbsoluteMinimum(request.getAbsoluteMinimum());
+        if (request.getDailyLimit() != null)      account.setDailyLimit(request.getDailyLimit());
+        if (request.getTransferLimit() != null)   account.setTransferLimit(request.getTransferLimit());
+        if (request.getAbsoluteMinimum() != null) account.setAbsoluteMinimum(request.getAbsoluteMinimum());
+        if (request.getStatus() != null)          account.setStatus(request.getStatus());
 
-        Account saved = accountRepository.save(account);
-        return AccountMapper.toDTO(saved);
-    }
-
-    @Override
-    public AccountResponseDTO closeAccount(UUID accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException("Account not found with id: " + accountId));
-
-        account.setStatus(AccountStatus.CLOSED);
-        Account saved = accountRepository.save(account);
-        return AccountMapper.toDTO(saved);
+        return AccountMapper.toDTO(accountRepository.save(account));
     }
 
     public String generateIban() {
