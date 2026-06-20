@@ -84,6 +84,15 @@ public class UserService implements IUserService {
         return userRepository.findByStatus(status, pageable).map(UserMapper::toDTO);
     }
 
+    @Override
+    public List<UserResponseDTO> searchUsers(String name) {
+        return userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(name, name)
+                .stream()
+                .map(UserMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
     /*
      * Approving auto-creates both account types with sane defaults.
      * pin=0 is unset — employee sets real limits/PIN separately.

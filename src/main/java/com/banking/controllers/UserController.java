@@ -70,6 +70,13 @@ public class UserController {
                 : userService.getUsersByStatus(status, pageable));
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Operation(summary = "Search users by first or last name — employee only")
+    public ResponseEntity<List<UserResponseDTO>> searchUsers(@RequestParam String name) {
+        return ResponseEntity.ok(userService.searchUsers(name));
+    }
+
     @PutMapping("/{userId}/approve")
     @PreAuthorize("hasRole('EMPLOYEE')")
     @Operation(summary = "Approve pending customer, auto-creates checking + savings")
