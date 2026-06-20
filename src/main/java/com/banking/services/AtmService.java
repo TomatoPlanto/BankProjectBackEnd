@@ -37,7 +37,14 @@ public class AtmService implements IAtmService {
 
         return AtmLoginResponseDTO.builder()
                 .token(token)
+                .accountId(account.getAccountId())
+                .iban(account.getIban())
+                .accountType(account.getAccountType())
                 .balance(account.getBalance())
+                .dailyLimit(account.getDailyLimit())
+                .transferLimit(account.getTransferLimit())
+                .absoluteMinimum(account.getAbsoluteMinimum())
+                .status(account.getStatus())
                 .build();
     }
 }
