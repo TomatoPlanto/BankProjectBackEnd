@@ -3,6 +3,7 @@ package com.banking.controllers;
 import com.banking.models.dto.request.CreateAccountRequestDTO;
 import com.banking.models.dto.request.UpdateAccountRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
+import com.banking.models.dto.response.IbanLookupResponseDTO;
 import com.banking.services.Interface.IAccountService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -41,11 +42,18 @@ public class AccountController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    // any logged in user can resolve an iban (needed for transfers), but only gets name + id, no balance
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/iban/{iban}")
-    public ResponseEntity<AccountResponseDTO> getAccountById(@PathVariable String iban) {
-        AccountResponseDTO response = accountService.getAccountByIban(iban);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<IbanLookupResponseDTO> getAccountById(@PathVariable String iban) {
+        return ResponseEntity.ok(accountService.getAccountByIban(iban));
+    }
+
+    // search recipients by name -> returns name + iban only
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/search")
+    public ResponseEntity<List<IbanLookupResponseDTO>> searchAccounts(@RequestParam String name) {
+        return ResponseEntity.ok(accountService.searchAccountsByOwner(name));
     }
 
     @PreAuthorize("hasRole('EMPLOYEE') or @accountSecurity.isSelf(#userId, authentication.name)")

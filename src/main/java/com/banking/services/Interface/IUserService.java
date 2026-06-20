@@ -22,6 +22,8 @@ public interface IUserService {
 
     Page<UserResponseDTO> getUsersByStatus(UserStatus status, Pageable pageable);
 
+    List<UserResponseDTO> searchUsers(String name);
+
     UserResponseDTO approveUser(UUID userId);
 
     UserResponseDTO closeUser(UUID userId);

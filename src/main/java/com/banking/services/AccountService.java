@@ -6,6 +6,7 @@ import com.banking.mappers.AccountMapper;
 import com.banking.models.dto.request.CreateAccountRequestDTO;
 import com.banking.models.dto.request.UpdateAccountRequestDTO;
 import com.banking.models.dto.response.AccountResponseDTO;
+import com.banking.models.dto.response.IbanLookupResponseDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.User;
 import com.banking.models.enums.AccountStatus;
@@ -61,10 +62,25 @@ public class AccountService implements IAccountService {
     }
 
     @Override
-    public AccountResponseDTO getAccountByIban(String iban) {
+    public IbanLookupResponseDTO getAccountByIban(String iban) {
         Account account = accountRepository.findByIban(iban)
                 .orElseThrow(() -> new AccountNotFoundException("Account not with iban was not found"));
-        return AccountMapper.toDTO(account);
+        String ownerName = account.getUser().getFirstName() + " " + account.getUser().getLastName();
+        return new IbanLookupResponseDTO(account.getAccountId(), account.getIban(), ownerName);
+    }
+
+    // search active accounts by the owner's first or last name (for picking a transfer recipient)
+    @Override
+    public List<IbanLookupResponseDTO> searchAccountsByOwner(String name) {
+        return accountRepository
+                .findByUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCase(name, name)
+                .stream()
+                .filter(account -> account.getStatus() == AccountStatus.ACTIVE)
+                .map(account -> new IbanLookupResponseDTO(
+                        account.getAccountId(),
+                        account.getIban(),
+                        account.getUser().getFirstName() + " " + account.getUser().getLastName()))
+                .collect(Collectors.toList());
     }
 
     @Override

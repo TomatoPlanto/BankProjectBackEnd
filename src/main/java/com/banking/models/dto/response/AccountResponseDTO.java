@@ -16,6 +16,7 @@ public class AccountResponseDTO {
 
     private UUID accountId;
     private UUID userId;
+    private String ownerName;
     private String iban;
     private AccountType accountType;
     private BigDecimal balance;
