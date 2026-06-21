@@ -62,22 +62,26 @@ public class TransactionService implements ITransactionService {
     @Override
     @Transactional
     public TransactionResponseDTO transfer(TransferRequestDTO request){
+        // Get accounts
         Account from = getAccountForTransaction(request.getFromAccountId(), "Failed to get sender's account");
         Account to = getAccountForTransaction(request.getToAccountId(), "Failed to get receiver's account");
 
+        // Get transfer type
         User initiator = getLoggedInUser();
+        TransactionType transactionType = initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER;
 
+        // Make transaction
         if(from == null){
             if(to == null) throw new TransactionFormatException("Both sender's and receiver's account id is null");
 
-            return depositToAccount(request, to, initiator);
+            return depositToAccount(request, to, transactionType);
         }
         else{
             if(to == null){
-                return withdrawFromAccount(request, from, initiator);
+                return withdrawFromAccount(request, from, transactionType);
             }
             else{
-                return transferBetweenAccounts(request, from, to, initiator);
+                return transferBetweenAccounts(request, from, to, transactionType);
             }
         }
     }
@@ -91,19 +95,9 @@ public class TransactionService implements ITransactionService {
         return accountWrap.get();
     }
 
-    private User getLoggedInUser(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentEmail = auth.getName();
-
-        var wrap = userRepository.findByEmail(currentEmail);
-        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
-
-        return wrap.get();
-    }
-
-    private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){
+    private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceTransferBetweenAccounts(request, fromAccount, toAccount, initiator);
+        transactionPolicy.enforceTransferBetweenAccounts(request, fromAccount, toAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -111,7 +105,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description(request.getDescription())
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -126,9 +120,9 @@ public class TransactionService implements ITransactionService {
         return TransactionMapper.toDTO(trans);
     }
 
-    private TransactionResponseDTO withdrawFromAccount(TransferRequestDTO request, Account fromAccount, User initiator){
+    private TransactionResponseDTO withdrawFromAccount(TransferRequestDTO request, Account fromAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceWithdrawFromAccounts(request, fromAccount, initiator);
+        transactionPolicy.enforceWithdrawFromAccounts(request, fromAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -136,7 +130,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(null)
                 .amount(request.getTransferAmount())
                 .description("Withdrawal")
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -149,9 +143,9 @@ public class TransactionService implements ITransactionService {
         return TransactionMapper.toDTO(trans);
     }
 
-    private TransactionResponseDTO depositToAccount(TransferRequestDTO request, Account toAccount, User initiator){
+    private TransactionResponseDTO depositToAccount(TransferRequestDTO request, Account toAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceDepositToAccounts(request, toAccount, initiator);
+        transactionPolicy.enforceDepositToAccounts(request, toAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -159,7 +153,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description("Deposit")
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -178,9 +172,6 @@ public class TransactionService implements ITransactionService {
         // Get account and check if it exists
         var account = accountRepository.findByAccountId(request.getAccountId());
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
-
-        // Enforce get transactions policy
-        transactionPolicy.enforceGetAccountTransactions(account.get(), getLoggedInUser());
 
         PageRequest pageReq;
 
@@ -215,5 +206,15 @@ public class TransactionService implements ITransactionService {
         res.setCount(count);
 
         return res;
+    }
+
+    private User getLoggedInUser(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = auth.getName();
+
+        var wrap = userRepository.findByEmail(currentEmail);
+        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
+
+        return wrap.get();
     }
 }

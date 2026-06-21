@@ -15,8 +15,8 @@ public class TransactionMapper {
 
         return TransactionResponseDTO.builder()
                 .transactionId(trans.getTransactionId())
-                .fromAccount(from == null ? null : AccountMapper.toDTO(from))
-                .toAccount(to == null ? null : AccountMapper.toDTO(to))
+                .fromAccount(from == null ? null : AccountMapper.toShortDTO(from))
+                .toAccount(to == null ? null : AccountMapper.toShortDTO(to))
                 .amount(trans.getAmount())
                 .type(trans.getType())
                 .description(trans.getDescription())

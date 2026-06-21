@@ -25,19 +25,7 @@ public class TransactionPolicy {
         this.transactionRepository = transactionRepository;
     }
 
-    public void enforceGetAccountTransactions(Account account, User initiator) {
-        // Check request initiator
-        if(account.getUser().getUserId() != initiator.getUserId()){
-            if(initiator.getRole() != UserRole.EMPLOYEE) throw new AccessDeniedException("Only owner of the account can view its transactions");
-        }
-    }
-
-    public void enforceTransferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){
-        // Check transaction initiator
-        if(initiator.getUserId() != fromAccount.getUser().getUserId()){
-            if(initiator.getRole() != UserRole.EMPLOYEE) throw new AccessDeniedException("Only owner of the account can make transactions");
-        }
-
+    public void enforceTransferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount){
         // Check if accounts are active
         if(toAccount.getStatus() != AccountStatus.ACTIVE || fromAccount.getStatus() != AccountStatus.ACTIVE){
             throw new AccountNotActiveException("Sender and receiver account's must be active");
@@ -76,12 +64,7 @@ public class TransactionPolicy {
         }
     }
 
-    public void enforceWithdrawFromAccounts(TransferRequestDTO request, Account fromAccount, User initiator){
-        // Check transaction initiator
-        if(initiator.getUserId() != fromAccount.getUser().getUserId()){
-            if(initiator.getRole() != UserRole.EMPLOYEE) throw new AccessDeniedException("Only owner of the account can make a withdrawal");
-        }
-
+    public void enforceWithdrawFromAccounts(TransferRequestDTO request, Account fromAccount){
         // Check if account is active
         if(fromAccount.getStatus() != AccountStatus.ACTIVE){
             throw new AccountNotActiveException("Account is not active");
@@ -108,12 +91,7 @@ public class TransactionPolicy {
         }
     }
 
-    public void enforceDepositToAccounts(TransferRequestDTO request, Account toAccount, User initiator){
-        // Check transaction initiator
-        if(initiator.getUserId() != toAccount.getUser().getUserId()){
-            if(initiator.getRole() != UserRole.EMPLOYEE) throw new AccessDeniedException("Only owner of the account can make a deposit");
-        }
-
+    public void enforceDepositToAccounts(TransferRequestDTO request, Account toAccount){
         // Check if account is active
         if(toAccount.getStatus() != AccountStatus.ACTIVE){
             throw new AccountNotActiveException("Account is not active");
