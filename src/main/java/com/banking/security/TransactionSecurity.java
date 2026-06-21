@@ -40,7 +40,7 @@ public class TransactionSecurity {
         if(initiatorWrap.isEmpty()) return false;
         var initiator = initiatorWrap.get();
 
-        if(initiator.getRole() == UserRole.EMPLOYEE)return true;
+        if(initiator.getRole() == UserRole.EMPLOYEE) return true;
 
         if(request.getFromAccountId() == null){
             if(request.getToAccountId() == null) return false;
@@ -49,13 +49,13 @@ public class TransactionSecurity {
             if(toAccountWrap.isEmpty()) return false;
             var toAccount = toAccountWrap.get();
 
-            return toAccount.getUser().getUserId() == initiator.getUserId();
+            return toAccount.getUser().getUserId().equals(initiator.getUserId());
         }
 
         var fromAccountWrap = accountRepository.findByAccountId(request.getFromAccountId());
         if(fromAccountWrap.isEmpty()) return false;
         var fromAccount = fromAccountWrap.get();
 
-        return fromAccount.getUser().getUserId() == initiator.getUserId();
+        return fromAccount.getUser().getUserId().equals(initiator.getUserId());
     }
 }

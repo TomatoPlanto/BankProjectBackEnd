@@ -36,7 +36,7 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('EMPLOYEE') or @transactionSecurity.isTransferAllowed(#request, authentication.name)")
+    @PreAuthorize("@transactionSecurity.isTransferAllowed(#request, authentication.name)")
     @PostMapping()
     public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferRequestDTO request) {
         TransactionResponseDTO response = transactionService.transfer(request);
@@ -46,7 +46,7 @@ public class TransactionController {
     @PreAuthorize("hasRole('EMPLOYEE') or @accountSecurity.isAccountOwner(#accountId, authentication.name)")
     @GetMapping()
     public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@RequestParam UUID accountId,
-            @RequestParam int pageNumber, @RequestParam int transactionsPerPage, @RequestParam String sorting, @RequestParam boolean sortingOrder) {
+            @RequestParam int pageNumber, @RequestParam int transactionsPerPage, @RequestParam(defaultValue = "") String sorting, @RequestParam(defaultValue = "true") boolean sortingOrder) {
 
         var request = GetAccountTransactionsRequestDTO.builder()
                 .accountId(accountId)

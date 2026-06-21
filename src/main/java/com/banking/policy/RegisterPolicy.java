@@ -1,4 +1,4 @@
-package com.banking.domain.policy.users;
+package com.banking.policy;
 
 import com.banking.exceptions.DuplicateBsnException;
 import com.banking.exceptions.DuplicateEmailException;
@@ -31,5 +31,4 @@ public class RegisterPolicy {
             throw new DuplicateBsnException("BSN already registered");
         }
     }
-
 }
