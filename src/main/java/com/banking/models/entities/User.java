@@ -4,6 +4,7 @@ import com.banking.models.enums.UserRole;
 import com.banking.models.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,4 +54,15 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Account> accounts;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    // set the join date automatically, unless one was provided (e.g. seed data)
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }
