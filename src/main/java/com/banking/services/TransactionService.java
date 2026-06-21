@@ -51,6 +51,7 @@ public class TransactionService implements ITransactionService {
     }
 
     @Override
+    @Transactional
     public TransactionResponseDTO getTransactionById(UUID transactionId){
         var transaction = transactionRepository.findByTransactionId(transactionId);
         if(transaction.isEmpty()) throw new TransactionNotFoundException("Transaction not found with id: " + transactionId);

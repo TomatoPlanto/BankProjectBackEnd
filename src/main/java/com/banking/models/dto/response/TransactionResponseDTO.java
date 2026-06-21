@@ -14,8 +14,10 @@ import java.util.UUID;
 @Builder
 public class TransactionResponseDTO {
     private UUID transactionId;
-    private UUID fromAccountId;
-    private UUID toAccountId;
+
+    private AccountResponseDTO fromAccount;
+    private AccountResponseDTO toAccount;
+
     private BigDecimal amount;
     private TransactionType type;
     private String description;

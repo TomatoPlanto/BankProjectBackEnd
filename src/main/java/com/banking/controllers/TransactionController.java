@@ -36,8 +36,18 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/account")
-    public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@Valid @RequestBody GetAccountTransactionsRequestDTO request) {
+    @GetMapping()
+    public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@RequestParam UUID accountId,
+            @RequestParam int pageNumber, @RequestParam int transactionsPerPage, @RequestParam String sorting, @RequestParam boolean sortingOrder) {
+
+        var request = GetAccountTransactionsRequestDTO.builder()
+                .accountId(accountId)
+                .pageNumber(pageNumber)
+                .transactionsPerPage(transactionsPerPage)
+                .sorting(sorting)
+                .sortingOrder(sortingOrder)
+                .build();
+
         var response = transactionService.getAccountTransactions(request);
         return ResponseEntity.ok(response);
     }

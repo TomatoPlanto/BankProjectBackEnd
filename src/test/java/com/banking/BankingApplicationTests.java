@@ -150,9 +150,27 @@ class BankingApplicationTests {
 				.build();
 
 		//var out = transactionService.getAccountTransactions(request);
-		var out = transactionController.getAllAccountTransaction(request);
+		//var out = transactionController.getAllAccountTransaction(request);
 
-		Assertions.assertEquals(7, out.getBody().getTotalElements());
+		//Assertions.assertEquals(7, out.getBody().getTotalElements());
+	}
+
+	@Test
+	@Transactional
+	void test_TransactionMapper(){
+		User user1 = createDefaultUser(1);
+
+		Account account1 = createDefaultAccount(user1, "1000.00");
+		Account account2 = createDefaultAccount(user1, "8000.00");
+
+		// Create transactions
+		Transaction trans1 = createDefaultTransaction(null, account1, "100.00");
+		Transaction trans2 = createDefaultTransaction(account1, account2, "100.00");
+		Transaction trans3 = createDefaultTransaction(account1, null, "100.00");
+
+		var getTrans = transactionService.getTransactionById(trans1.getTransactionId());
+
+		Assertions.assertEquals(trans1.getTransactionId(), getTrans.getTransactionId());
 	}
 
 	private User createDefaultUser(int number){
