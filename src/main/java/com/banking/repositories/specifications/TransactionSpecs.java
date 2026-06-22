@@ -39,13 +39,13 @@ public class TransactionSpecs {
         return (root, query, builder) ->
             amount == null ?
             builder.conjunction() :
-            builder.lessThan(root.get("amount"), amount);
+            builder.lessThanOrEqualTo(root.get("amount"), amount);
     }
 
     public static Specification<Transaction> amountGreaterThan(BigDecimal amount) {
         return (root, query, builder) ->
                 amount == null ?
                 builder.conjunction() :
-                builder.greaterThan(root.get("amount"), amount);
+                builder.greaterThanOrEqualTo(root.get("amount"), amount);
     }
 }
