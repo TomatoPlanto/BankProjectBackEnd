@@ -1,7 +1,7 @@
 package com.banking.policy;
 
 import com.banking.exceptions.*;
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.entities.Account;
 import com.banking.models.entities.User;

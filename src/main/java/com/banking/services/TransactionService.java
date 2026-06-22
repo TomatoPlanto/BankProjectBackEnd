@@ -2,7 +2,7 @@ package com.banking.services;
 
 import com.banking.exceptions.*;
 import com.banking.mappers.TransactionMapper;
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
@@ -168,34 +168,44 @@ public class TransactionService implements ITransactionService {
 
     @Override
     @Transactional
-    public Page<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
+    public Page<TransactionResponseDTO> getTransactions(GetTransactionsRequestDTO request){
+        if(request.getAccountId() != null) return getAccountTransactions(request);
+
+        return getAllTransactions(request);
+    }
+
+    @Transactional
+    public Page<TransactionResponseDTO> getAllTransactions(GetTransactionsRequestDTO request){
+        // Get transactions
+        var trans = transactionRepository.findAll(getRequestPage(request));
+
+        // Map transactions to DTO
+        return trans.map(TransactionMapper::toDTO);
+    }
+
+    @Transactional
+    public Page<TransactionResponseDTO> getAccountTransactions(GetTransactionsRequestDTO request){
         // Get account and check if it exists
         var account = accountRepository.findByAccountId(request.getAccountId());
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
 
-        PageRequest pageReq;
+        // Get transactions
+        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), getRequestPage(request));
 
+        // Map transactions to DTO
+        return trans.map(TransactionMapper::toDTO);
+    }
+
+    private PageRequest getRequestPage(GetTransactionsRequestDTO request){
         if(!request.getSorting().isEmpty()){
             // Check if sorting field is allowed
             if(!ALLOWED_SORTINGS.contains(request.getSorting())) throw new NotAllowedSortingFieldException("Sorting by unknown field");
 
             // Use sorting and order
-            if(request.isSortingOrder()){
-                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).ascending());
-            }
-            else {
-                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).descending());
-            }
-        }
-        else{
-            pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
+            return PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), request.isSortingOrder() ? Sort.by(request.getSorting()).ascending() : Sort.by(request.getSorting()).descending());
         }
 
-        // Get transactions
-        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), pageReq);
-
-        // Map transactions to DTO
-        return trans.map(TransactionMapper::toDTO);
+        return PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
     }
 
     @Override

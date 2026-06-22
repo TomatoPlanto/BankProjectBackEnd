@@ -1,19 +1,19 @@
 package com.banking.models.dto.request;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @Builder
-public class GetAccountTransactionsRequestDTO {
-    @NotNull(message = "Account id is required")
+public class GetTransactionsRequestDTO {
+    @Nullable
     private UUID accountId;
 
     @Min(value = 0, message = "Page number must be more than 0")

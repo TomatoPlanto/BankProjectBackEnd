@@ -1,6 +1,6 @@
 package com.banking.controllers;
 
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
@@ -45,10 +45,10 @@ public class TransactionController {
 
     @PreAuthorize("hasRole('EMPLOYEE') or @accountSecurity.isAccountOwner(#accountId, authentication.name)")
     @GetMapping()
-    public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@RequestParam UUID accountId,
+    public ResponseEntity<Page<TransactionResponseDTO>> getTransactions(@RequestParam(required = false) UUID accountId,
             @RequestParam int pageNumber, @RequestParam int transactionsPerPage, @RequestParam(defaultValue = "") String sorting, @RequestParam(defaultValue = "true") boolean sortingOrder) {
 
-        var request = GetAccountTransactionsRequestDTO.builder()
+        var request = GetTransactionsRequestDTO.builder()
                 .accountId(accountId)
                 .pageNumber(pageNumber)
                 .transactionsPerPage(transactionsPerPage)
@@ -56,7 +56,7 @@ public class TransactionController {
                 .sortingOrder(sortingOrder)
                 .build();
 
-        var response = transactionService.getAccountTransactions(request);
+        var response = transactionService.getTransactions(request);
         return ResponseEntity.ok(response);
     }
 }
