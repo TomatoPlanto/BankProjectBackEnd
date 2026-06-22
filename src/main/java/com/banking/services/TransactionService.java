@@ -15,6 +15,7 @@ import com.banking.policy.TransactionPolicy;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
 import com.banking.repositories.UserRepository;
+import com.banking.repositories.AtmRepository;
 import com.banking.services.Interface.ITransactionService;
 import jakarta.persistence.Converter;
 import org.springframework.data.domain.Page;
@@ -41,13 +42,14 @@ public class TransactionService implements ITransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final TransactionPolicy transactionPolicy;
+    private final AtmRepository atmRepository;
 
-    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, TransactionPolicy transactionPolicy) {
+    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, TransactionPolicy transactionPolicy, AtmRepository atmRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
-
         this.transactionPolicy = transactionPolicy;
+        this.atmRepository = atmRepository;
     }
 
     @Override
@@ -90,14 +92,24 @@ public class TransactionService implements ITransactionService {
         return accountWrap.get();
     }
 
-    private User getLoggedInUser(){
+    private User getLoggedInUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentEmail = auth.getName();
+        String principal = auth.getName();
 
-        var wrap = userRepository.findByEmail(currentEmail);
-        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
+        // Check if this is an ATM session (principal is an IBAN, not an email)
+        boolean isAtm = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ATM_ACCOUNT"));
 
-        return wrap.get();
+        if (isAtm) {
+            // Principal is the IBAN — look up the account owner
+            Account account = atmRepository.findByIbanIgnoreCase(principal)
+                    .orElseThrow(() -> new RuntimeException("ATM session account not found"));
+            return account.getUser();
+        }
+
+        // Regular user session — principal is email
+        return userRepository.findByEmail(principal)
+                .orElseThrow(() -> new RuntimeException("Failed to get transaction initiator for transfer"));
     }
 
     private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){

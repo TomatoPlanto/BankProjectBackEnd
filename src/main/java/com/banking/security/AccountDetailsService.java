@@ -19,7 +19,7 @@ public class AccountDetailsService implements UserDetails {
     public String getUsername() { return account.getIban(); }
 
     @Override
-    public String getPassword() { return null; } // not used for JWT generation
+    public String getPassword() { return null; }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

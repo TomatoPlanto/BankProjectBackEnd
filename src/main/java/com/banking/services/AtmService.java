@@ -26,6 +26,8 @@ public class AtmService implements IAtmService {
     @Override
     public AtmLoginResponseDTO atmLogin(AtmLoginRequestDTO request) {
 
+        System.out.println("ATM login attempt — IBAN: [" + request.getIban().trim() + "]");
+
         Account account = atmRepository.findByIbanIgnoreCase(request.getIban().trim())
                 .orElseThrow(() -> new UserNotFoundException("Account not found"));
 
