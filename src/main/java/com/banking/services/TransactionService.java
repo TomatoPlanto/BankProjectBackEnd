@@ -171,28 +171,8 @@ public class TransactionService implements ITransactionService {
     @Override
     @Transactional
     public Page<TransactionResponseDTO> getTransactions(GetTransactionsRequestDTO request){
-        if(request.getAccountId() != null) return getAccountTransactions(request);
-
-        return getAllTransactions(request);
-    }
-
-    @Transactional
-    public Page<TransactionResponseDTO> getAllTransactions(GetTransactionsRequestDTO request){
         // Get transactions
         var trans = transactionRepository.findAll(getRequestSpecs(request) ,getRequestPage(request));
-
-        // Map transactions to DTO
-        return trans.map(TransactionMapper::toDTO);
-    }
-
-    @Transactional
-    public Page<TransactionResponseDTO> getAccountTransactions(GetTransactionsRequestDTO request){
-        // Get account and check if it exists
-        var account = accountRepository.findByAccountId(request.getAccountId());
-        if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
-
-        // Get transactions
-        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), getRequestSpecs(request), getRequestPage(request));
 
         // Map transactions to DTO
         return trans.map(TransactionMapper::toDTO);
@@ -212,6 +192,9 @@ public class TransactionService implements ITransactionService {
 
     private Specification<Transaction> getRequestSpecs(GetTransactionsRequestDTO request){
         ArrayList<Specification<Transaction>> specs = new ArrayList<Specification<Transaction>>();
+
+        // AccountId specs
+        if(request.getAccountId() != null) specs.add(TransactionSpecs.accountIdEquals(request.getAccountId()));
 
         // Iban specs
         if(request.getFilterToAccountIban() != null) specs.add(TransactionSpecs.toAccountIbanEquals(request.getFilterToAccountIban()));

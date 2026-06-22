@@ -21,11 +21,6 @@ import java.util.UUID;
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
     Optional<Transaction> findByTransactionId(UUID transactionId);
 
-    @Query(value = "SELECT t FROM Transaction t WHERE t.toAccount.accountId = ?1 OR t.fromAccount.accountId = ?1",
-           countQuery = "SELECT COUNT(*) FROM Transaction t WHERE t.toAccount.accountId = ?1 OR t.fromAccount.accountId = ?1",
-           nativeQuery = false)
-    Page<Transaction> findAccountTransactions(UUID accountId, Specification<Transaction> spec, Pageable pageable);
-
     @Query("SELECT COUNT(*) FROM Transaction t WHERE t.toAccount.accountId  = ?1 OR t.fromAccount.accountId = ?1")
     int countAllAccountTransactions(UUID accountId);
 

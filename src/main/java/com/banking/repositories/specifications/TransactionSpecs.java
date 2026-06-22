@@ -4,13 +4,14 @@ import com.banking.models.entities.Transaction;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class TransactionSpecs {
-    public static Specification<Transaction> anyAccountIbanEquals(String iban) {
+    public static Specification<Transaction> accountIdEquals(UUID accountId) {
         return (root, query, builder) ->
-            iban == null ?
+            accountId == null ?
             builder.conjunction() :
-            builder.or(builder.equal(root.get("toAccount").get("iban"), iban), builder.equal(root.get("fromAccount").get("iban"), iban));
+            builder.or(builder.equal(root.get("toAccount").get("accountId"), accountId), builder.equal(root.get("fromAccount").get("accountId"), accountId));
     }
 
     public static Specification<Transaction> toAccountIbanEquals(String iban) {
