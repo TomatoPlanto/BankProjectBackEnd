@@ -25,6 +25,11 @@ public class JwtService {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+
+        if (userDetails instanceof AccountDetailsService) {
+            claims.put("type", "ATM");
+        }
+
         return buildToken(claims, userDetails);
     }
 
