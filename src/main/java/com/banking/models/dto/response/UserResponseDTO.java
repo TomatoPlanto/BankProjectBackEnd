@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -21,4 +22,5 @@ public class UserResponseDTO {
     private String phoneNumber;
     private UserStatus status;
     private UserRole role;
+    private LocalDateTime createdAt;
 }

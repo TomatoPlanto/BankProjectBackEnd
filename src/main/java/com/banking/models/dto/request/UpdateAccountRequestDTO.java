@@ -1,24 +1,24 @@
 package com.banking.models.dto.request;
 
+import com.banking.models.enums.AccountStatus;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 
+// all fields optional - only the ones sent get updated
 @Getter
 @Setter
-public class UpdateAccountLimitsRequestDTO {
+public class UpdateAccountRequestDTO {
 
-    @NotNull(message = "Daily limit is required")
     @DecimalMin(value = "0.0", message = "Daily limit must be positive")
     private BigDecimal dailyLimit;
 
-    @NotNull(message = "Transfer limit is required")
     @DecimalMin(value = "0.0", message = "Transfer limit must be positive")
     private BigDecimal transferLimit;
 
-    @NotNull(message = "Absolute minimum is required")
     private BigDecimal absoluteMinimum;
+
+    private AccountStatus status;
 }

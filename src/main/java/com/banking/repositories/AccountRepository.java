@@ -29,6 +29,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findByStatus(AccountStatus status);
 
+    List<Account> findByUserFirstNameContainingIgnoreCaseOrUserLastNameContainingIgnoreCase(String firstName, String lastName);
+
     List<Account> findByUserUserIdAndStatus(UUID userId, AccountStatus status);
 
     @Modifying

@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,19 +58,23 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(userId));
     }
 
+    // optional ?status=PENDING filter, otherwise returns everyone
     @GetMapping
     @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "List all users — employee only")
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    @Operation(summary = "List users, optionally filtered by status — employee only")
+    public ResponseEntity<Page<UserResponseDTO>> getUsers(
+            @RequestParam(required = false) UserStatus status,
+            Pageable pageable) {
+        return ResponseEntity.ok(status == null
+                ? userService.getAllUsers(pageable)
+                : userService.getUsersByStatus(status, pageable));
     }
 
-    @GetMapping("/status/{status}")
+    @GetMapping("/search")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    @Operation(summary = "Filter users by status — employee only")
-    public ResponseEntity<List<UserResponseDTO>> getUsersByStatus(
-            @PathVariable UserStatus status) {
-        return ResponseEntity.ok(userService.getUsersByStatus(status));
+    @Operation(summary = "Search users by first or last name — employee only")
+    public ResponseEntity<List<UserResponseDTO>> searchUsers(@RequestParam String name) {
+        return ResponseEntity.ok(userService.searchUsers(name));
     }
 
     @PutMapping("/{userId}/approve")

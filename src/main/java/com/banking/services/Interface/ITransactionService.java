@@ -1,6 +1,6 @@
 package com.banking.services.Interface;
 
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
@@ -14,6 +14,6 @@ import java.util.UUID;
 public interface ITransactionService {
     TransactionResponseDTO getTransactionById(UUID transactionId);
     TransactionResponseDTO transfer(TransferRequestDTO request);
-    Page<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request);
+    Page<TransactionResponseDTO> getTransactions(GetTransactionsRequestDTO request);
     CountResponseDTO getAccountTransactionsCount(UUID accountId);
 }

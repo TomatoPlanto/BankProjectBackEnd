@@ -1,16 +1,22 @@
 package com.banking.controllers;
 
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
+import com.banking.models.entities.User;
 import com.banking.services.Interface.ITransactionService;
+import com.banking.services.Interface.IUserService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,21 +30,43 @@ public class TransactionController {
         this.transactionService = transactionService;
     }
 
+    @PreAuthorize("hasRole('EMPLOYEE') or @transactionSecurity.isTransactionCoOwner(#transactionId, authentication.name)")
     @GetMapping("/{transactionId}")
     public ResponseEntity<TransactionResponseDTO> getAccountById(@PathVariable UUID transactionId) {
         TransactionResponseDTO response = transactionService.getTransactionById(transactionId);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("@transactionSecurity.isTransferAllowed(#request, authentication.name)")
     @PostMapping()
     public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferRequestDTO request) {
         TransactionResponseDTO response = transactionService.transfer(request);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/account")
-    public ResponseEntity<Page<TransactionResponseDTO>> getAllAccountTransaction(@Valid @RequestBody GetAccountTransactionsRequestDTO request) {
-        var response = transactionService.getAccountTransactions(request);
+    @PreAuthorize("hasRole('EMPLOYEE') or @accountSecurity.isAccountOwner(#accountId, authentication.name)")
+    @GetMapping()
+    public ResponseEntity<Page<TransactionResponseDTO>> getTransactions(@RequestParam(required = false) UUID accountId,
+            @RequestParam int pageNumber, @RequestParam int transactionsPerPage,
+            @RequestParam(defaultValue = "") String sorting, @RequestParam(defaultValue = "true") boolean sortingOrder,
+            @RequestParam(required = false) String filterFromIban, @RequestParam(required = false) String filterToIban,
+            @RequestParam(required = false) BigDecimal filterMinAmount, @RequestParam(required = false) BigDecimal filterMaxAmount,
+            @RequestParam(required = false) BigDecimal filterEqualAmount) {
+
+        var request = GetTransactionsRequestDTO.builder()
+                .accountId(accountId)
+                .pageNumber(pageNumber)
+                .transactionsPerPage(transactionsPerPage)
+                .sorting(sorting)
+                .sortingOrder(sortingOrder)
+                .filterFromAccountIban(filterFromIban)
+                .filterToAccountIban(filterToIban)
+                .filterMinAmount(filterMinAmount)
+                .filterMaxAmount(filterMaxAmount)
+                .filterEqualAmount(filterEqualAmount)
+                .build();
+
+        var response = transactionService.getTransactions(request);
         return ResponseEntity.ok(response);
     }
 }

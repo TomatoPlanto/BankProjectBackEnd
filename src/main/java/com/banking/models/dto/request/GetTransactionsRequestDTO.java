@@ -1,19 +1,21 @@
 package com.banking.models.dto.request;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Builder
-public class GetAccountTransactionsRequestDTO {
-    @NotNull(message = "Account id is required")
+public class GetTransactionsRequestDTO {
+    @Nullable
     private UUID accountId;
 
     @Min(value = 0, message = "Page number must be more than 0")
@@ -27,4 +29,19 @@ public class GetAccountTransactionsRequestDTO {
 
     @NotNull(message = "Sorting order is required")
     private boolean sortingOrder;
+
+    @Nullable
+    private String filterFromAccountIban;
+
+    @Nullable
+    private String filterToAccountIban;
+
+    @Nullable
+    private BigDecimal filterMinAmount;
+
+    @Nullable
+    private BigDecimal filterMaxAmount;
+
+    @Nullable
+    private BigDecimal filterEqualAmount;
 }
