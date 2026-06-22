@@ -5,7 +5,9 @@ import com.banking.models.entities.Account;
 import com.banking.models.entities.Transaction;
 import com.banking.models.entities.User;
 import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
@@ -16,13 +18,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
+public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
     Optional<Transaction> findByTransactionId(UUID transactionId);
-
-    @Query(value = "SELECT t FROM Transaction t WHERE t.toAccount.accountId = ?1 OR t.fromAccount.accountId = ?1",
-           countQuery = "SELECT COUNT(*) FROM Transaction t WHERE t.toAccount.accountId = ?1 OR t.fromAccount.accountId = ?1",
-           nativeQuery = false)
-    Page<Transaction> findAccountTransactions(UUID accountId, Pageable pageable);
 
     @Query("SELECT COUNT(*) FROM Transaction t WHERE t.toAccount.accountId  = ?1 OR t.fromAccount.accountId = ?1")
     int countAllAccountTransactions(UUID accountId);
