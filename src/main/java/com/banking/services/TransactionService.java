@@ -15,11 +15,13 @@ import com.banking.policy.TransactionPolicy;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
 import com.banking.repositories.UserRepository;
+import com.banking.repositories.specifications.TransactionSpecs;
 import com.banking.services.Interface.ITransactionService;
 import jakarta.persistence.Converter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -177,7 +179,7 @@ public class TransactionService implements ITransactionService {
     @Transactional
     public Page<TransactionResponseDTO> getAllTransactions(GetTransactionsRequestDTO request){
         // Get transactions
-        var trans = transactionRepository.findAll(getRequestPage(request));
+        var trans = transactionRepository.findAll(getRequestSpecs(request) ,getRequestPage(request));
 
         // Map transactions to DTO
         return trans.map(TransactionMapper::toDTO);
@@ -190,7 +192,7 @@ public class TransactionService implements ITransactionService {
         if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
 
         // Get transactions
-        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), getRequestPage(request));
+        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), getRequestSpecs(request), getRequestPage(request));
 
         // Map transactions to DTO
         return trans.map(TransactionMapper::toDTO);
@@ -206,6 +208,25 @@ public class TransactionService implements ITransactionService {
         }
 
         return PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
+    }
+
+    private Specification<Transaction> getRequestSpecs(GetTransactionsRequestDTO request){
+        ArrayList<Specification<Transaction>> specs = new ArrayList<Specification<Transaction>>();
+
+        // Iban specs
+        if(request.getFilterToAccountIban() != null) specs.add(TransactionSpecs.toAccountIbanEquals(request.getFilterToAccountIban()));
+        if(request.getFilterFromAccountIban() != null) specs.add(TransactionSpecs.fromAccountIbanEquals(request.getFilterFromAccountIban()));
+
+        // Amount specs
+        if(request.getFilterEqualAmount() != null) {
+            specs.add(TransactionSpecs.amountEquals(request.getFilterEqualAmount()));
+        }
+        else {
+            if(request.getFilterMinAmount() != null) specs.add(TransactionSpecs.amountGreaterThan(request.getFilterMinAmount()));
+            if(request.getFilterMaxAmount() != null) specs.add(TransactionSpecs.amountLessThan(request.getFilterMaxAmount()));
+        }
+
+        return Specification.allOf(specs);
     }
 
     @Override

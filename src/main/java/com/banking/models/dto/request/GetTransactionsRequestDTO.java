@@ -2,11 +2,13 @@ package com.banking.models.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -27,4 +29,19 @@ public class GetTransactionsRequestDTO {
 
     @NotNull(message = "Sorting order is required")
     private boolean sortingOrder;
+
+    @Nullable
+    private String filterFromAccountIban;
+
+    @Nullable
+    private String filterToAccountIban;
+
+    @Nullable
+    private BigDecimal filterMinAmount;
+
+    @Nullable
+    private BigDecimal filterMaxAmount;
+
+    @Nullable
+    private BigDecimal filterEqualAmount;
 }

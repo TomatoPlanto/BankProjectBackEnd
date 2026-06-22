@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,7 +47,11 @@ public class TransactionController {
     @PreAuthorize("hasRole('EMPLOYEE') or @accountSecurity.isAccountOwner(#accountId, authentication.name)")
     @GetMapping()
     public ResponseEntity<Page<TransactionResponseDTO>> getTransactions(@RequestParam(required = false) UUID accountId,
-            @RequestParam int pageNumber, @RequestParam int transactionsPerPage, @RequestParam(defaultValue = "") String sorting, @RequestParam(defaultValue = "true") boolean sortingOrder) {
+            @RequestParam int pageNumber, @RequestParam int transactionsPerPage,
+            @RequestParam(defaultValue = "") String sorting, @RequestParam(defaultValue = "true") boolean sortingOrder,
+            @RequestParam(required = false) String filterFromIban, @RequestParam(required = false) String filterToIban,
+            @RequestParam(required = false) BigDecimal filterMinAmount, @RequestParam(required = false) BigDecimal filterMaxAmount,
+            @RequestParam(required = false) BigDecimal filterEqualAmount) {
 
         var request = GetTransactionsRequestDTO.builder()
                 .accountId(accountId)
@@ -54,6 +59,11 @@ public class TransactionController {
                 .transactionsPerPage(transactionsPerPage)
                 .sorting(sorting)
                 .sortingOrder(sortingOrder)
+                .filterFromAccountIban(filterFromIban)
+                .filterToAccountIban(filterToIban)
+                .filterMinAmount(filterMinAmount)
+                .filterMaxAmount(filterMaxAmount)
+                .filterEqualAmount(filterEqualAmount)
                 .build();
 
         var response = transactionService.getTransactions(request);
