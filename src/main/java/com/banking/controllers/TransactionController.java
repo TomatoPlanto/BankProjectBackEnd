@@ -37,7 +37,7 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("@transactionSecurity.isTransferAllowed(#request, authentication.name)")
+    @PreAuthorize("@transactionSecurity.isTransferAllowed(#request)")
     @PostMapping()
     public ResponseEntity<TransactionResponseDTO> transferBetweenAccounts(@Valid @RequestBody TransferRequestDTO request) {
         TransactionResponseDTO response = transactionService.transfer(request);
