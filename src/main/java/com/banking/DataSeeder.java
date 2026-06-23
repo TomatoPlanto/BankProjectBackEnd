@@ -43,28 +43,53 @@ public class DataSeeder implements ApplicationRunner {
 
         LocalDateTime now = LocalDateTime.now();
 
-        seedEmployee(now.minusYears(3));
+        // ---- employees (2) ----
+        seedEmployee("employee@bank.com", "Bank",  "Employee", "111111111", "0611111111", now.minusYears(3));
+        seedEmployee("sarah@bank.com",    "Sarah", "Vance",    "111111112", "0611111112", now.minusYears(2));
 
-        // active customers - these get a checking + savings account
+        // ---- original active customers (checking + savings) ----
         Account john = seedCustomer("john@email.com", "John", "Doe",     "123456789", "0612345678", UserStatus.ACTIVE, "2500.00", "5000.00",  "1234", now.minusMonths(14));
         Account jane = seedCustomer("jane@email.com", "Jane", "Smith",   "987654321", "0687654321", UserStatus.ACTIVE, "1500.00", "3000.00",  "5678", now.minusMonths(9));
         Account emma = seedCustomer("emma@email.com", "Emma", "Johnson", "222222222", "0622222222", UserStatus.ACTIVE, "4200.00", "12000.00", "2468", now.minusMonths(5));
         Account liam = seedCustomer("liam@email.com", "Liam", "Brown",   "333333333", "0633333333", UserStatus.ACTIVE, "780.50",  "250.00",   "1357", now.minusMonths(2));
 
-        // a closed customer (for the CLOSED tab) and two pending sign-ups (no accounts yet)
+        // ---- original closed + pending ----
         seedCustomer("olivia@email.com",  "Olivia",  "Davis",  "444444444", "0644444444", UserStatus.CLOSED,  "0.00", "0.00", "9999", now.minusYears(2));
         seedCustomer("pending@email.com", "Pending", "User",   "555555555", "0655555555", UserStatus.PENDING, null,   null,   null,   now.minusDays(2));
         seedCustomer("noah@email.com",    "Noah",    "Wilson", "666666666", "0666666666", UserStatus.PENDING, null,   null,   null,   now.minusDays(1));
 
+        // ---- new active customers (checking + savings) ----
+        Account sophia = seedCustomer("sophia@email.com", "Sophia", "van Dijk",  "100000001", "0701000001", UserStatus.ACTIVE, "3200.00", "8000.00",  "1111", now.minusMonths(20));
+        Account lucas  = seedCustomer("lucas@email.com",  "Lucas",  "de Vries",  "100000002", "0701000002", UserStatus.ACTIVE, "900.00",  "1500.00",  "2222", now.minusMonths(18));
+        Account mia    = seedCustomer("mia@email.com",    "Mia",    "Bakker",    "100000003", "0701000003", UserStatus.ACTIVE, "6000.00", "20000.00", "3333", now.minusMonths(16));
+        Account daan   = seedCustomer("daan@email.com",   "Daan",   "Jansen",    "100000004", "0701000004", UserStatus.ACTIVE, "450.75",  "1200.00",  "4444", now.minusMonths(13));
+        Account tess   = seedCustomer("tess@email.com",   "Tess",   "Visser",    "100000005", "0701000005", UserStatus.ACTIVE, "2750.00", "6500.00",  "5555", now.minusMonths(11));
+        Account sem    = seedCustomer("sem@email.com",    "Sem",    "Smit",      "100000006", "0701000006", UserStatus.ACTIVE, "1800.00", "4000.00",  "6666", now.minusMonths(8));
+        Account julia  = seedCustomer("julia@email.com",  "Julia",  "Meijer",    "100000007", "0701000007", UserStatus.ACTIVE, "5200.00", "15000.00", "7777", now.minusMonths(7));
+        Account finn   = seedCustomer("finn@email.com",   "Finn",   "Mulder",    "100000008", "0701000008", UserStatus.ACTIVE, "320.00",  "800.00",   "8888", now.minusMonths(6));
+        Account lotte  = seedCustomer("lotte@email.com",  "Lotte",  "de Boer",   "100000009", "0701000009", UserStatus.ACTIVE, "4100.00", "9500.00",  "1212", now.minusMonths(4));
+        Account bram   = seedCustomer("bram@email.com",   "Bram",   "Bos",       "100000010", "0701000010", UserStatus.ACTIVE, "670.00",  "2200.00",  "3434", now.minusMonths(3));
+        Account eva    = seedCustomer("eva@email.com",    "Eva",    "Peters",    "100000011", "0701000011", UserStatus.ACTIVE, "2300.00", "5600.00",  "5656", now.minusMonths(1));
+
+        // ---- new closed customers (for the CLOSED tab) ----
+        seedCustomer("thomas@email.com", "Thomas", "Hendriks", "100000012", "0701000012", UserStatus.CLOSED, "0.00", "0.00", "7878", now.minusYears(1));
+        seedCustomer("anna@email.com",   "Anna",   "Dekker",   "100000013", "0701000013", UserStatus.CLOSED, "0.00", "0.00", "9090", now.minusMonths(15));
+
+        // ---- new pending sign-ups (no accounts yet) ----
+        seedCustomer("ruben@email.com", "Ruben", "Brouwer", "100000014", "0701000014", UserStatus.PENDING, null, null, null, now.minusDays(3));
+        seedCustomer("nina@email.com",  "Nina",  "Vos",     "100000015", "0701000015", UserStatus.PENDING, null, null, null, now.minusHours(6));
+
+        // transactions
         seedTransactions(now, john, jane, emma, liam);
+        seedMoreTransactions(now, sophia, lucas, mia, daan, tess, julia, bram, eva);
     }
 
-    private void seedEmployee(LocalDateTime createdAt) {
+    private void seedEmployee(String email, String first, String last, String bsn, String phone, LocalDateTime createdAt) {
         userRepository.save(User.builder()
-                .email("employee@bank.com")
+                .email(email)
                 .passwordHash(passwordEncoder.encode("employee123"))
-                .firstName("Bank").lastName("Employee")
-                .bsn("111111111").phoneNumber("0611111111")
+                .firstName(first).lastName(last)
+                .bsn(bsn).phoneNumber(phone)
                 .role(UserRole.EMPLOYEE).status(UserStatus.ACTIVE)
                 .createdAt(createdAt)
                 .build());
@@ -141,6 +166,35 @@ public class DataSeeder implements ApplicationRunner {
         save(liam, null, "40.00",  "ATM withdrawal",      now.minusDays(16));
         save(john, null, "200.00", "ATM withdrawal",      now.minusDays(30));
         save(emma, null, "120.00", "ATM withdrawal",      now.minusDays(50));
+    }
+
+    // extra activity across the newer active accounts so lists/filters aren't all "the original four"
+    private void seedMoreTransactions(LocalDateTime now, Account sophia, Account lucas, Account mia,
+                                      Account daan, Account tess, Account julia, Account bram, Account eva) {
+        // transfers
+        save(sophia, mia,   "420.00", "Joint savings",     now.minusDays(1));
+        save(mia,    julia, "1200.00","Car deposit",       now.minusDays(3));
+        save(lucas,  daan,  "65.00",  "Concert split",     now.minusDays(4));
+        save(tess,   eva,   "180.50", "Weekend trip",      now.minusDays(6));
+        save(julia,  sophia,"250.00", "Returned loan",     now.minusDays(9));
+        save(eva,    bram,  "75.00",  "Dinner",            now.minusDays(12));
+        save(bram,   lucas, "40.00",  "Taxi",              now.minusDays(14));
+        save(daan,   tess,  "95.25",  "Groceries",         now.minusDays(17));
+        save(mia,    eva,   "310.00", "Furniture share",   now.minusDays(22));
+        save(julia,  tess,  "500.00", "Rent share",        now.minusDays(29));
+        save(sophia, lucas, "60.00",  "Lunch",             now.minusDays(36));
+        save(eva,    julia, "140.00", "Tickets",           now.minusDays(44));
+
+        // ATM deposits
+        save(null, sophia, "600.00", "ATM deposit",        now.minusDays(5));
+        save(null, mia,    "1500.00","ATM deposit",        now.minusDays(11));
+        save(null, julia,  "800.00", "ATM deposit",        now.minusDays(19));
+
+        // ATM withdrawals
+        save(sophia, null, "150.00", "ATM withdrawal",     now.minusDays(2));
+        save(daan,   null, "60.00",  "ATM withdrawal",     now.minusDays(8));
+        save(tess,   null, "200.00", "ATM withdrawal",     now.minusDays(21));
+        save(bram,   null, "30.00",  "ATM withdrawal",     now.minusDays(38));
     }
 
     private void save(Account from, Account to, String amount, String desc, LocalDateTime when) {
