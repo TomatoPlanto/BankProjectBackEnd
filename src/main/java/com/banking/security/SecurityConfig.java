@@ -1,5 +1,7 @@
 package com.banking.security;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +24,9 @@ import org.springframework.http.HttpMethod;
 
 public class SecurityConfig {
 
+    @Value("${spring.h2.console.enabled:false}")
+    private boolean h2ConsoleEnabled;
+
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
 
@@ -36,22 +41,32 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/h2-console/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/api-docs/**",
-                                "/v3/api-docs/**"
-                        ).permitAll() 
-                        .requestMatchers("/api/users/register", "/api/atm/login").permitAll()
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    auth
+                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                            .requestMatchers(
+                                    "/api/auth/**",
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html",
+                                    "/api-docs/**",
+                                    "/v3/api-docs/**"
+                            ).permitAll()
+                            .requestMatchers("/api/users/register", "/api/atm/login").permitAll();
+                    // only allow the h2 console route when the console is on (dev)
+                    if (h2ConsoleEnabled) {
+                        auth.requestMatchers(PathRequest.toH2Console()).permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+                .headers(headers -> headers.frameOptions(frame -> {
+                    if (h2ConsoleEnabled) {
+                        frame.sameOrigin();
+                    } else {
+                        frame.deny();
+                    }
+                }));
 
         return http.build();
     }

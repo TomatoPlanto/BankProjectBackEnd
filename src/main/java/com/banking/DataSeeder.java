@@ -39,155 +39,118 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        seedEmployee();
-        Account johnChecking = seedJohn();
-        Account janeChecking = seedJane();
-        seedTransactions(johnChecking, janeChecking);
-        seedPendingUser();
+        if (userRepository.existsByEmail("employee@bank.com")) return; // already seeded
+
+        LocalDateTime now = LocalDateTime.now();
+
+        seedEmployee(now.minusYears(3));
+
+        // active customers - these get a checking + savings account
+        Account john = seedCustomer("john@email.com", "John", "Doe",     "123456789", "0612345678", UserStatus.ACTIVE, "2500.00", "5000.00",  "1234", now.minusMonths(14));
+        Account jane = seedCustomer("jane@email.com", "Jane", "Smith",   "987654321", "0687654321", UserStatus.ACTIVE, "1500.00", "3000.00",  "5678", now.minusMonths(9));
+        Account emma = seedCustomer("emma@email.com", "Emma", "Johnson", "222222222", "0622222222", UserStatus.ACTIVE, "4200.00", "12000.00", "2468", now.minusMonths(5));
+        Account liam = seedCustomer("liam@email.com", "Liam", "Brown",   "333333333", "0633333333", UserStatus.ACTIVE, "780.50",  "250.00",   "1357", now.minusMonths(2));
+
+        // a closed customer (for the CLOSED tab) and two pending sign-ups (no accounts yet)
+        seedCustomer("olivia@email.com",  "Olivia",  "Davis",  "444444444", "0644444444", UserStatus.CLOSED,  "0.00", "0.00", "9999", now.minusYears(2));
+        seedCustomer("pending@email.com", "Pending", "User",   "555555555", "0655555555", UserStatus.PENDING, null,   null,   null,   now.minusDays(2));
+        seedCustomer("noah@email.com",    "Noah",    "Wilson", "666666666", "0666666666", UserStatus.PENDING, null,   null,   null,   now.minusDays(1));
+
+        seedTransactions(now, john, jane, emma, liam);
     }
 
-    private void seedEmployee() {
-        if (userRepository.existsByEmail("employee@bank.com")) return;
+    private void seedEmployee(LocalDateTime createdAt) {
         userRepository.save(User.builder()
                 .email("employee@bank.com")
                 .passwordHash(passwordEncoder.encode("employee123"))
-                .firstName("Bank")
-                .lastName("Employee")
-                .bsn("111111111")
-                .phoneNumber("0611111111")
-                .role(UserRole.EMPLOYEE)
-                .status(UserStatus.ACTIVE)
+                .firstName("Bank").lastName("Employee")
+                .bsn("111111111").phoneNumber("0611111111")
+                .role(UserRole.EMPLOYEE).status(UserStatus.ACTIVE)
+                .createdAt(createdAt)
                 .build());
     }
 
-    private Account seedJohn() {
-        if (userRepository.existsByEmail("john@email.com")) return null;
-
-        User john = userRepository.save(User.builder()
-                .email("john@email.com")
+    // makes a customer; active/closed ones also get a checking + savings account
+    private Account seedCustomer(String email, String first, String last, String bsn, String phone,
+                                 UserStatus status, String checkingBalance, String savingsBalance,
+                                 String pin, LocalDateTime createdAt) {
+        User user = userRepository.save(User.builder()
+                .email(email)
                 .passwordHash(passwordEncoder.encode("secret123"))
-                .firstName("John")
-                .lastName("Doe")
-                .bsn("123456789")
-                .phoneNumber("0612345678")
-                .role(UserRole.CUSTOMER)
-                .status(UserStatus.ACTIVE)
+                .firstName(first).lastName(last).bsn(bsn).phoneNumber(phone)
+                .role(UserRole.CUSTOMER).status(status)
+                .createdAt(createdAt)
                 .build());
 
-        Account checking = accountRepository.save(Account.builder()
-                .user(john)
-                .iban(accountService.generateIban())
-                .accountType(AccountType.CHECKING)
-                .dailyLimit(new BigDecimal("1000.00"))
-                .transferLimit(new BigDecimal("500.00"))
-                .absoluteMinimum(BigDecimal.ZERO)
-                .balance(new BigDecimal("2500.00"))
-                .status(AccountStatus.ACTIVE)
-                .pin("1234")
-                .build());
+        // pending customers have no accounts until an employee approves them
+        if (status == UserStatus.PENDING) return null;
 
-        accountRepository.save(Account.builder()
-                .user(john)
-                .iban(accountService.generateIban())
-                .accountType(AccountType.SAVINGS)
-                .dailyLimit(new BigDecimal("1000.00"))
-                .transferLimit(new BigDecimal("500.00"))
-                .absoluteMinimum(BigDecimal.ZERO)
-                .balance(new BigDecimal("5000.00"))
-                .status(AccountStatus.ACTIVE)
-                .pin("1234")
-                .build());
-
+        Account checking = accountRepository.save(account(user, AccountType.CHECKING, checkingBalance, pin, status));
+        accountRepository.save(account(user, AccountType.SAVINGS, savingsBalance, pin, status));
         return checking;
     }
 
-    private Account seedJane() {
-        if (userRepository.existsByEmail("jane@email.com")) return null;
-
-        User jane = userRepository.save(User.builder()
-                .email("jane@email.com")
-                .passwordHash(passwordEncoder.encode("secret123"))
-                .firstName("Jane")
-                .lastName("Smith")
-                .bsn("987654321")
-                .phoneNumber("0687654321")
-                .role(UserRole.CUSTOMER)
-                .status(UserStatus.ACTIVE)
-                .build());
-
-        Account checking = accountRepository.save(Account.builder()
-                .user(jane)
+    private Account account(User user, AccountType type, String balance, String pin, UserStatus userStatus) {
+        AccountStatus accountStatus = userStatus == UserStatus.CLOSED ? AccountStatus.CLOSED : AccountStatus.ACTIVE;
+        return Account.builder()
+                .user(user)
                 .iban(accountService.generateIban())
-                .accountType(AccountType.CHECKING)
+                .accountType(type)
                 .dailyLimit(new BigDecimal("1000.00"))
                 .transferLimit(new BigDecimal("500.00"))
                 .absoluteMinimum(BigDecimal.ZERO)
-                .balance(new BigDecimal("1500.00"))
-                .status(AccountStatus.ACTIVE)
-                .pin("5678")
-                .build());
-
-        accountRepository.save(Account.builder()
-                .user(jane)
-                .iban(accountService.generateIban())
-                .accountType(AccountType.SAVINGS)
-                .dailyLimit(new BigDecimal("1000.00"))
-                .transferLimit(new BigDecimal("500.00"))
-                .absoluteMinimum(BigDecimal.ZERO)
-                .balance(new BigDecimal("3000.00"))
-                .status(AccountStatus.ACTIVE)
-                .pin("5678")
-                .build());
-
-        return checking;
+                .balance(new BigDecimal(balance))
+                .status(accountStatus)
+                .pin(pin)
+                .build();
     }
 
-    /*
-     * Seed realistic history so the transaction page has data on first run.
-     * null fromAccount = deposit, null toAccount = withdrawal.
-     */
-    private void seedTransactions(Account johnChecking, Account janeChecking) {
-        if (johnChecking == null || janeChecking == null) return;
+    // null fromAccount = ATM deposit, null toAccount = ATM withdrawal, both set = transfer
+    private void seedTransactions(LocalDateTime now, Account john, Account jane, Account emma, Account liam) {
+        // customer to customer transfers
+        save(john, jane, "350.00", "Rent share",         now.minusDays(1));
+        save(jane, john, "120.00", "Dinner last week",   now.minusDays(2));
+        save(emma, john, "75.50",  "Concert tickets",    now.minusDays(3));
+        save(john, emma, "200.00", "Holiday fund",        now.minusDays(5));
+        save(liam, jane, "45.00",  "Coffee tab",          now.minusDays(6));
+        save(jane, emma, "310.25", "Furniture",           now.minusDays(8));
+        save(emma, liam, "90.00",  "Gym membership",      now.minusDays(9));
+        save(john, jane, "350.00", "Rent share",          now.minusDays(11));
+        save(jane, liam, "60.00",  "Birthday gift",       now.minusDays(13));
+        save(emma, john, "150.00", "Loan repayment",      now.minusDays(15));
+        save(liam, emma, "25.00",  "Lunch",               now.minusDays(18));
+        save(john, emma, "480.00", "Shared trip",         now.minusDays(21));
+        save(jane, john, "95.99",  "Groceries",           now.minusDays(24));
+        save(emma, jane, "215.00", "Deposit return",      now.minusDays(28));
+        save(john, liam, "130.00", "Tools",               now.minusDays(33));
+        save(jane, emma, "300.00", "Rent share",          now.minusDays(40));
+        save(liam, john, "55.00",  "Movie night",         now.minusDays(47));
+        save(emma, john, "350.00", "Rent share",          now.minusDays(55));
 
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(1)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "350.00", "Transfer to Jane", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(1)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(janeChecking, johnChecking, "396.99", "Transfer to John", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(johnChecking, janeChecking, "134.55", "Transfer to Jane", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(9)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(null,   janeChecking, "134.55", "ATM deposit", LocalDateTime.now().minusDays(11)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(2)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(3)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(10)));
-        transactionRepository.save(txn(janeChecking, null,     "134.55", "ATM withdrawal", LocalDateTime.now().minusDays(4)));
+        // ATM deposits
+        save(null, john, "500.00", "ATM deposit",         now.minusDays(2));
+        save(null, jane, "250.00", "ATM deposit",         now.minusDays(7));
+        save(null, emma, "1000.00","ATM deposit",         now.minusDays(12));
+        save(null, liam, "175.00", "ATM deposit",         now.minusDays(20));
+        save(null, jane, "300.00", "ATM deposit",         now.minusDays(35));
+
+        // ATM withdrawals
+        save(john, null, "100.00", "ATM withdrawal",      now.minusDays(1));
+        save(jane, null, "80.00",  "ATM withdrawal",      now.minusDays(4));
+        save(emma, null, "250.00", "ATM withdrawal",      now.minusDays(10));
+        save(liam, null, "40.00",  "ATM withdrawal",      now.minusDays(16));
+        save(john, null, "200.00", "ATM withdrawal",      now.minusDays(30));
+        save(emma, null, "120.00", "ATM withdrawal",      now.minusDays(50));
     }
 
-    private Transaction txn(Account from, Account to, String amount, String desc, LocalDateTime dateTime) {
-        return Transaction.builder()
+    private void save(Account from, Account to, String amount, String desc, LocalDateTime when) {
+        transactionRepository.save(Transaction.builder()
                 .fromAccount(from)
                 .toAccount(to)
                 .amount(new BigDecimal(amount))
                 .description(desc)
                 .type(TransactionType.CUSTOMER_TRANSFER)
-                .createdAt(dateTime)
-                .build();
-    }
-
-    private void seedPendingUser() {
-        if (userRepository.existsByEmail("pending@email.com")) return;
-        userRepository.save(User.builder()
-                .email("pending@email.com")
-                .passwordHash(passwordEncoder.encode("secret123"))
-                .firstName("Pending")
-                .lastName("User")
-                .bsn("555555555")
-                .phoneNumber("0655555555")
-                .role(UserRole.CUSTOMER)
-                .status(UserStatus.PENDING)
+                .createdAt(when)
                 .build());
     }
 }

@@ -2,7 +2,7 @@ package com.banking.services;
 
 import com.banking.exceptions.*;
 import com.banking.mappers.TransactionMapper;
-import com.banking.models.dto.request.GetAccountTransactionsRequestDTO;
+import com.banking.models.dto.request.GetTransactionsRequestDTO;
 import com.banking.models.dto.request.TransferRequestDTO;
 import com.banking.models.dto.response.CountResponseDTO;
 import com.banking.models.dto.response.TransactionResponseDTO;
@@ -15,15 +15,16 @@ import com.banking.policy.TransactionPolicy;
 import com.banking.repositories.AccountRepository;
 import com.banking.repositories.TransactionRepository;
 import com.banking.repositories.UserRepository;
+import com.banking.repositories.AtmRepository;
+import com.banking.repositories.specifications.TransactionSpecs;
 import com.banking.services.Interface.ITransactionService;
-import jakarta.persistence.Converter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -31,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class TransactionService implements ITransactionService {
@@ -41,16 +41,18 @@ public class TransactionService implements ITransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final TransactionPolicy transactionPolicy;
+    private final AtmRepository atmRepository;
 
-    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, TransactionPolicy transactionPolicy) {
+    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository, TransactionPolicy transactionPolicy, AtmRepository atmRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
-
         this.transactionPolicy = transactionPolicy;
+        this.atmRepository = atmRepository;
     }
 
     @Override
+    @Transactional
     public TransactionResponseDTO getTransactionById(UUID transactionId){
         var transaction = transactionRepository.findByTransactionId(transactionId);
         if(transaction.isEmpty()) throw new TransactionNotFoundException("Transaction not found with id: " + transactionId);
@@ -61,22 +63,26 @@ public class TransactionService implements ITransactionService {
     @Override
     @Transactional
     public TransactionResponseDTO transfer(TransferRequestDTO request){
+        // Get accounts
         Account from = getAccountForTransaction(request.getFromAccountId(), "Failed to get sender's account");
         Account to = getAccountForTransaction(request.getToAccountId(), "Failed to get receiver's account");
 
+        // Get transfer type
         User initiator = getLoggedInUser();
+        TransactionType transactionType = initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER;
 
+        // Make transaction
         if(from == null){
             if(to == null) throw new TransactionFormatException("Both sender's and receiver's account id is null");
 
-            return depositToAccount(request, to, initiator);
+            return depositToAccount(request, to, transactionType);
         }
         else{
             if(to == null){
-                return withdrawFromAccount(request, from, initiator);
+                return withdrawFromAccount(request, from, transactionType);
             }
             else{
-                return transferBetweenAccounts(request, from, to, initiator);
+                return transferBetweenAccounts(request, from, to, transactionType);
             }
         }
     }
@@ -90,19 +96,29 @@ public class TransactionService implements ITransactionService {
         return accountWrap.get();
     }
 
-    private User getLoggedInUser(){
+    private User getLoggedInUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentEmail = auth.getName();
+        String principal = auth.getName();
 
-        var wrap = userRepository.findByEmail(currentEmail);
-        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
+        // Check if this is an ATM session (principal is an IBAN, not an email)
+        boolean isAtm = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ATM_ACCOUNT"));
 
-        return wrap.get();
+        if (isAtm) {
+            // Principal is the IBAN — look up the account owner
+            Account account = atmRepository.findByIbanIgnoreCase(principal)
+                    .orElseThrow(() -> new RuntimeException("ATM session account not found"));
+            return account.getUser();
+        }
+
+        // Regular user session — principal is email
+        return userRepository.findByEmail(principal)
+                .orElseThrow(() -> new RuntimeException("Failed to get transaction initiator for transfer"));
     }
 
-    private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, User initiator){
+    private TransactionResponseDTO transferBetweenAccounts(TransferRequestDTO request, Account fromAccount, Account toAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceTransferBetweenAccounts(request, fromAccount, toAccount, initiator);
+        transactionPolicy.enforceTransferBetweenAccounts(request, fromAccount, toAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -110,7 +126,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description(request.getDescription())
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -125,9 +141,9 @@ public class TransactionService implements ITransactionService {
         return TransactionMapper.toDTO(trans);
     }
 
-    private TransactionResponseDTO withdrawFromAccount(TransferRequestDTO request, Account fromAccount, User initiator){
+    private TransactionResponseDTO withdrawFromAccount(TransferRequestDTO request, Account fromAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceWithdrawFromAccounts(request, fromAccount, initiator);
+        transactionPolicy.enforceWithdrawFromAccounts(request, fromAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -135,7 +151,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(null)
                 .amount(request.getTransferAmount())
                 .description("Withdrawal")
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -148,9 +164,9 @@ public class TransactionService implements ITransactionService {
         return TransactionMapper.toDTO(trans);
     }
 
-    private TransactionResponseDTO depositToAccount(TransferRequestDTO request, Account toAccount, User initiator){
+    private TransactionResponseDTO depositToAccount(TransferRequestDTO request, Account toAccount, TransactionType transactionType){
         // Enforce transaction policy
-        transactionPolicy.enforceDepositToAccounts(request, toAccount, initiator);
+        transactionPolicy.enforceDepositToAccounts(request, toAccount);
 
         // Create transaction
         Transaction trans = Transaction.builder()
@@ -158,7 +174,7 @@ public class TransactionService implements ITransactionService {
                 .toAccount(toAccount)
                 .amount(request.getTransferAmount())
                 .description("Deposit")
-                .type(initiator.getRole() == UserRole.EMPLOYEE ? TransactionType.EMPLOYEE_TRANSFER : TransactionType.CUSTOMER_TRANSFER)
+                .type(transactionType)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -173,37 +189,46 @@ public class TransactionService implements ITransactionService {
 
     @Override
     @Transactional
-    public Page<TransactionResponseDTO> getAccountTransactions(GetAccountTransactionsRequestDTO request){
-        // Get account and check if it exists
-        var account = accountRepository.findByAccountId(request.getAccountId());
-        if(account.isEmpty()) throw new AccountNotFoundException("Account not found");
+    public Page<TransactionResponseDTO> getTransactions(GetTransactionsRequestDTO request){
+        // Get transactions
+        var trans = transactionRepository.findAll(getRequestSpecs(request) ,getRequestPage(request));
 
-        // Enforce get transactions policy
-        transactionPolicy.enforceGetAccountTransactions(account.get(), getLoggedInUser());
+        // Map transactions to DTO
+        return trans.map(TransactionMapper::toDTO);
+    }
 
-        PageRequest pageReq;
-
+    private PageRequest getRequestPage(GetTransactionsRequestDTO request){
         if(!request.getSorting().isEmpty()){
             // Check if sorting field is allowed
             if(!ALLOWED_SORTINGS.contains(request.getSorting())) throw new NotAllowedSortingFieldException("Sorting by unknown field");
 
             // Use sorting and order
-            if(request.isSortingOrder()){
-                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).ascending());
-            }
-            else {
-                pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), Sort.by(request.getSorting()).descending());
-            }
-        }
-        else{
-            pageReq = PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
+            return PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage(), request.isSortingOrder() ? Sort.by(request.getSorting()).ascending() : Sort.by(request.getSorting()).descending());
         }
 
-        // Get transactions
-        var trans = transactionRepository.findAccountTransactions(request.getAccountId(), pageReq);
+        return PageRequest.of(request.getPageNumber(), request.getTransactionsPerPage());
+    }
 
-        // Map transactions to DTO
-        return trans.map(TransactionMapper::toDTO);
+    private Specification<Transaction> getRequestSpecs(GetTransactionsRequestDTO request){
+        ArrayList<Specification<Transaction>> specs = new ArrayList<Specification<Transaction>>();
+
+        // AccountId specs
+        if(request.getAccountId() != null) specs.add(TransactionSpecs.accountIdEquals(request.getAccountId()));
+
+        // Iban specs
+        if(request.getFilterToAccountIban() != null) specs.add(TransactionSpecs.toAccountIbanEquals(request.getFilterToAccountIban()));
+        if(request.getFilterFromAccountIban() != null) specs.add(TransactionSpecs.fromAccountIbanEquals(request.getFilterFromAccountIban()));
+
+        // Amount specs
+        if(request.getFilterEqualAmount() != null) {
+            specs.add(TransactionSpecs.amountEquals(request.getFilterEqualAmount()));
+        }
+        else {
+            if(request.getFilterMinAmount() != null) specs.add(TransactionSpecs.amountGreaterThan(request.getFilterMinAmount()));
+            if(request.getFilterMaxAmount() != null) specs.add(TransactionSpecs.amountLessThan(request.getFilterMaxAmount()));
+        }
+
+        return Specification.allOf(specs);
     }
 
     @Override

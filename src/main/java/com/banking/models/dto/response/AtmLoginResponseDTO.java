@@ -12,11 +12,9 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
-public class AccountResponseDTO {
-
+public class AtmLoginResponseDTO {
+    private String token;
     private UUID accountId;
-    private UUID userId;
-    private String ownerName;
     private String iban;
     private AccountType accountType;
     private BigDecimal balance;
@@ -24,5 +22,4 @@ public class AccountResponseDTO {
     private BigDecimal transferLimit;
     private BigDecimal absoluteMinimum;
     private AccountStatus status;
-    // pin intentionally omitted — never expose ATM PIN over REST
 }
