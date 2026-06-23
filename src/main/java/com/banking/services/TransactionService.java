@@ -18,7 +18,6 @@ import com.banking.repositories.UserRepository;
 import com.banking.repositories.AtmRepository;
 import com.banking.repositories.specifications.TransactionSpecs;
 import com.banking.services.Interface.ITransactionService;
-import jakarta.persistence.Converter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -26,7 +25,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -34,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class TransactionService implements ITransactionService {
@@ -242,15 +239,5 @@ public class TransactionService implements ITransactionService {
         res.setCount(count);
 
         return res;
-    }
-
-    private User getLoggedInUser(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String currentEmail = auth.getName();
-
-        var wrap = userRepository.findByEmail(currentEmail);
-        if(wrap.isEmpty()) throw new RuntimeException("Failed to get transaction initiator for transfer");
-
-        return wrap.get();
     }
 }
